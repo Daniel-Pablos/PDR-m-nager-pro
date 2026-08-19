@@ -1,0 +1,11 @@
+PDR Manager Pro v3 — sincronización en la nube
+
+1. Crea un proyecto en Supabase.
+2. En SQL Editor ejecuta SUPABASE_SCHEMA.sql.
+3. En Authentication > Providers activa Email.
+4. Abre PDR Manager Pro y entra en Nube.
+5. Introduce Project URL y Anon Key (NO la service_role key).
+6. Crea una cuenta o inicia sesión.
+7. Pulsa Sincronizar ahora.
+
+La app mantiene una copia local y sincroniza un registro por usuario. No compartas la service_role key.
