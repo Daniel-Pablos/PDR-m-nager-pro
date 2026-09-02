@@ -218,9 +218,12 @@ function opcionesImpactos(valor){
   return ['1','2','3','5','6'].map(v=>`<option value="${v}" ${String(valor)===v?'selected':''}>${v}</option>`).join('');
 }
 function opcionesDiametro(valor){
-  return [['0.5','0,5 cm'],['0.6','0,6 cm'],['0.7','0,7 cm'],['0.8','0,8 cm'],['0.9','0,9 cm'],
-          ['1-3','1–3 cm'],['3-5','3–5 cm'],['5-10','5–10 cm'],['10-20','10–20 cm'],['20-30','20–30 cm']]
-    .map(([v,t])=>`<option value="${v}" ${valor===v?'selected':''}>${t}</option>`).join('');
+  const opciones = [
+    ['0.5','0,5 cm'],['0.6','0,6 cm'],['0.7','0,7 cm'],['0.8','0,8 cm'],['0.9','0,9 cm'],
+    ['1','1 cm'],['2','2 cm'],['3','3 cm'],
+    ['3-5','3–5 cm'],['5-10','5–10 cm'],['10-20','10–20 cm'],['20-30','20–30 cm']
+  ];
+  return opciones.map(([v,t])=>`<option value="${v}" ${String(valor)===v?'selected':''}>${t}</option>`).join('');
 }
 function renderLineasZona(lineas){
   const el=document.getElementById('zonaLineas'); if(!el)return;
@@ -230,7 +233,7 @@ function renderLineasZona(lineas){
     const needsManual=(base===null||base===undefined||manual!==null);
     return `<div class="grid zona-linea" style="margin-top:${i?8:0};align-items:end">
       <div><label>Impactos</label><select class="zl-impactos">${opcionesImpactos(l.impactos)}</select></div>
-      <div><label>Diámetro</label><select class="zl-diametro" onchange="refrescarPrecioManual()">${opcionesDiametro(l.diametro)}</select></div>
+      <div><label>Diámetro (cm)</label><select class="zl-diametro" onchange="refrescarPrecioManual()">${opcionesDiametro(l.diametro)}</select></div>
       <div class="zl-manual-wrap" style="${needsManual?'':'display:none'}">
         <label>Precio manual (€)</label>
         <div class="row" style="align-items:center">
