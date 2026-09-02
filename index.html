@@ -1,2 +1,266 @@
-PDR_Manag…_v6.html
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>PDR Manager Pro · TEST</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#111827}
+header{background:#111827;color:white;padding:18px 16px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:21px}header small{opacity:.75}
+nav{display:flex;gap:6px;overflow:auto;padding:8px;background:white;position:sticky;top:73px;z-index:4;border-bottom:1px solid #ddd}
+nav button{border:0;background:#e5e7eb;padding:10px 13px;border-radius:10px;white-space:nowrap;font-weight:600}
+nav button.active{background:#111827;color:#fff}
+main{max-width:900px;margin:auto;padding:14px}.screen{display:none}.screen.active{display:block}
+.card{background:white;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px #0001}
+h2{margin:0 0 12px;font-size:19px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+label{font-size:13px;font-weight:700;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;font-size:16px;background:#fff}
+button.primary,button.action{border:0;border-radius:9px;padding:11px 14px;font-weight:700;background:#111827;color:#fff}
+button.secondary{border:0;border-radius:9px;padding:10px 12px;background:#e5e7eb;font-weight:700}
+button.danger{background:#fee2e2;color:#991b1b;border:0;border-radius:9px;padding:9px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.right{text-align:right}
+.total{font-size:28px;font-weight:800}.muted{color:#6b7280;font-size:13px}
+.list{display:grid;gap:8px}.item{border:1px solid #e5e7eb;border-radius:10px;padding:11px}
+.item strong{display:block;margin-bottom:3px}
+.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:700}
+.paid{background:#dcfce7;color:#166534}.pending{background:#fef3c7;color:#92400e}
+.stat{font-size:25px;font-weight:800}.photo{max-width:110px;max-height:110px;border-radius:8px;margin:5px}
+.sig{border:1px dashed #9ca3af;width:100%;height:150px;border-radius:10px;touch-action:none;background:#fff}
+table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
+</style>
+</head>
+<body>
+<header><h1>PDR Manager Pro <span style="font-size:12px">TEST</span></h1><small>Prototipo · datos guardados en este dispositivo</small></header>
+<nav id="nav"></nav>
+<main>
+<section id="inicio" class="screen active">
+<div class="card"><h2>Resumen</h2><div class="grid">
+<div><div class="muted">Clientes</div><div id="sClientes" class="stat">0</div></div>
+<div><div class="muted">Facturas</div><div id="sFacturas" class="stat">0</div></div>
+<div><div class="muted">Pendiente</div><div id="sPendiente" class="stat">0,00 €</div></div>
+<div><div class="muted">Cobrado</div><div id="sCobrado" class="stat">0,00 €</div></div>
+</div></div>
+<div class="card"><h2>Acciones rápidas</h2><div class="row">
+<button class="primary" onclick="go('calculador')">Nuevo cálculo</button>
+<button class="secondary" onclick="go('clientes')">Nuevo cliente</button>
+<button class="secondary" onclick="go('facturas')">Ver facturas</button>
+</div></div>
+</section>
 
+<section id="calculador" class="screen">
+<div class="card"><h2>Calculador PDR</h2>
+<p class="muted">Pulsa una zona del diagrama para añadir impactos. Esta es una primera versión TEST basada en tu plantilla.</p>
+<div class="card" style="background:#f9fafb">
+<h3 style="margin-top:0">Diagrama de zonas</h3>
+<div id="diagrama" style="position:relative;max-width:560px;margin:auto;padding:12px">
+<svg viewBox="0 0 600 300" width="100%" role="img" aria-label="Diagrama PDR interactivo">
+<path d="M55 150 C80 95 145 70 225 65 L375 65 C455 70 520 95 545 150 C520 205 455 230 375 235 L225 235 C145 230 80 205 55 150Z" fill="#eef2f7" stroke="#374151" stroke-width="4"/>
+<path d="M120 115 Q180 85 240 90 L360 90 Q420 85 480 115 M120 185 Q180 215 240 210 L360 210 Q420 215 480 185" fill="none" stroke="#9ca3af" stroke-width="3"/>
+<path d="M300 68 L300 232" stroke="#9ca3af" stroke-width="3"/>
+<g id="zoneButtons"></g>
+</svg>
+</div>
+<div id="zonasSeleccionadas" class="list"></div>
+<div class="card" style="margin-top:12px;background:#f9fafb">
+<h3 style="margin-top:0">Tapizado / destapizado</h3>
+<button id="tapizadoBtn" class="secondary" onclick="toggleTapizado()">○ Destapizar / tapizar · +25,00 €</button>
+<div id="tapizadoEstado" class="muted" style="margin-top:6px">No seleccionado</div>
+</div>
+</div>
+<div class="grid">
+<div><label>Cliente</label><select id="calcCliente"></select></div>
+<div><label>Matrícula</label><input id="calcMatricula" placeholder="1234 ABC"></div>
+<div><label>Zona</label><select id="zona"><option>Puerta</option><option>Aleta</option><option>Capó</option><option>Techo</option><option>Panel trasero</option><option>Otra</option></select></div>
+<div><label>Tamaño de abolladura (cm)</label><input id="tamano" type="number" min="0" step=".1" value="3"></div>
+<div><label>Tipo de reparación</label><select id="dificultad"><option value="1">Plano</option><option value="1">Curva</option><option value="1">Vena</option></select></div>
+<div><label>Acceso</label><select id="acceso"><option value="1">Abierto</option><option value="1">Bajo refuerzo</option><option value="1">Sin acceso directo</option></select></div>
+<div><label>Urgencia (€)</label><input id="minimo" type="number" step=".01" value="60"></div>
+<div><label>Cantidad de impactos</label><select id="cantidadImpactos"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option><option value="6">6</option></select></div>
+<div><label>Diámetro</label><select id="rangoDiametro"><option value="1-3">1–3 cm</option><option value="3-5">3–5 cm</option><option value="5-10">5–10 cm</option><option value="10-20">10–20 cm</option><option value="20-30">20–30 cm</option></select></div>
+<div><label>Desplazamiento (€)</label><input id="desplazamiento" type="number" step=".01" value="60"></div>
+</div>
+<br><button class="primary" onclick="calcular()">Calcular precio</button>
+<div class="card" style="margin-top:12px;background:#f9fafb"><div class="muted">Precio estimado</div><div id="resultado" class="total">0,00 €</div><div id="detalle" class="muted"></div></div>
+<button class="action" onclick="crearFactura()">Crear presupuesto/factura con este cálculo</button>
+</div>
+</section>
+
+
+<section id="granizo" class="screen">
+<div class="card"><h2>Calculador de Granizo</h2>
+<p class="muted">Tabla de precios de granizo en España. Selecciona si la pieza es horizontal o vertical, el tamaño del daño en mm y el tamaño de la pieza.</p>
+<div class="grid">
+<div><label>Tipo de pieza</label><select id="gTipo" onchange="actualizarGranizo()"><option value="h">Pieza horizontal</option><option value="v">Pieza vertical</option></select></div>
+<div><label>Tamaño del daño (mm)</label><select id="gMm" onchange="actualizarGranizo()"></select></div>
+<div><label>Tamaño de pieza (cm)</label><select id="gPieza" onchange="actualizarGranizo()"><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option><option value="60">60</option><option value="70">70</option></select></div>
+<div><label>Urgencia (€)</label><input id="gUrgencia" type="number" step=".01" value="60"></div>
+<div><label>Desplazamiento (€)</label><input id="gDesplazamiento" type="number" step=".01" value="60"></div>
+</div>
+<br><button class="primary" onclick="calcularGranizo()">Calcular granizo</button>
+<div class="card" style="margin-top:12px;background:#f9fafb"><div class="muted">Precio de reparación</div><div id="gResultado" class="total">0,00 €</div><div id="gDetalle" class="muted"></div></div>
+</div>
+<div class="card"><h2>Tabla de precios · Granizo</h2>
+<div style="overflow:auto"><table id="tablaGranizo"></table></div>
+<p class="muted">Los espacios sin precio en el documento original se mantienen como no disponibles.</p>
+</div>
+</section>
+<section id="clientes" class="screen">
+<div class="card"><h2>Nuevo cliente</h2><div class="grid">
+<div><label>Nombre / Razón social</label><input id="cNombre"></div>
+<div><label>NIF / NIE</label><input id="cNif"></div>
+<div><label>Nombre de empresa</label><input id="cEmpresa"></div>
+<div><label>Teléfono / WhatsApp</label><input id="cTel"></div>
+<div><label>Email</label><input id="cEmail" type="email"></div>
+<div><label>Dirección</label><input id="cDireccion"></div>
+<div><label>Notas</label><input id="cNotas"></div>
+</div><br><button class="primary" onclick="guardarCliente()">Guardar cliente</button></div>
+<div class="card"><h2>Clientes</h2><div id="listaClientes" class="list"></div></div>
+</section>
+
+<section id="trabajo" class="screen">
+<div class="card"><h2>Trabajo / fotos</h2>
+<div><label>Fotos antes</label><input id="fotoAntes" type="file" accept="image/*" multiple onchange="fotos('antes',this)"><div id="antesPreview"></div></div><br>
+<div><label>Fotos después</label><input id="fotoDespues" type="file" accept="image/*" multiple onchange="fotos('despues',this)"><div id="despuesPreview"></div></div>
+</div>
+<div class="card"><h2>Firma del cliente</h2><canvas id="firma" class="sig"></canvas><div class="row" style="margin-top:8px"><button class="secondary" onclick="limpiarFirma()">Borrar firma</button></div></div>
+</section>
+
+<section id="facturas" class="screen">
+<div class="card"><h2>Facturas</h2><div id="listaFacturas" class="list"></div></div>
+</section>
+
+<section id="ajustes" class="screen">
+<div class="card"><h2>Parámetros</h2><p class="muted">Estos valores se guardan en el navegador y sirven para probar distintos precios.</p>
+<div class="grid">
+<div><label>Urgencia (€)</label><input id="setMin" type="number" step=".01"></div>
+<div><label>Desplazamiento (€)</label><input id="setDesplazamiento" type="number" step=".01"></div>
+<div><label>Mi número de cuenta / IBAN</label><input id="setIban" autocomplete="off"></div>
+</div><br>
+<button class="primary" onclick="guardarAjustes()">Guardar parámetros</button>
+</div>
+<div class="card"><h2>Datos de prueba</h2><button class="danger" onclick="borrarTodo()">Borrar todos los datos</button></div>
+</section>
+</main>
+
+<script>
+const KEY='pdr_test_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"clientes":[],"facturas":[],"settings":{"min":60,"desplazamiento":60,"iban":""},"lastCalc":0,"photos":{"antes":[],"despues":[]}}');
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+const tabs=[['inicio','Inicio'],['calculador','PDR'],['granizo','Granizo'],['clientes','Clientes'],['trabajo','Trabajo'],['facturas','Facturas'],['ajustes','Ajustes']];
+const nav=document.getElementById('nav');tabs.forEach(([id,n])=>{let b=document.createElement('button');b.textContent=n;b.onclick=()=>go(id);b.dataset.id=id;nav.appendChild(b)});
+function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===id));render()}
+function euro(n){return Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'})}
+function guardarCliente(){let n=cNombre.value.trim();if(!n)return alert('Escribe el nombre del cliente.');db.clientes.push({id:Date.now(),nombre:n,nif:cNif.value,empresa:cEmpresa.value,tel:cTel.value,email:cEmail.value,direccion:cDireccion.value,notas:cNotas.value});cNombre.value=cNif.value=cEmpresa.value=cTel.value=cEmail.value=cDireccion.value=cNotas.value='';save();alert('Cliente guardado.')}
+function render(){
+sClientes.textContent=db.clientes.length;sFacturas.textContent=db.facturas.length;
+sPendiente.textContent=euro(db.facturas.filter(f=>f.estado==='Pendiente').reduce((a,f)=>a+f.total,0));
+sCobrado.textContent=euro(db.facturas.filter(f=>f.estado==='Pagada').reduce((a,f)=>a+f.total,0));
+calcCliente.innerHTML='<option value="">Sin cliente</option>'+db.clientes.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+listaClientes.innerHTML=db.clientes.length?db.clientes.map(c=>`<div class="item"><strong>${esc(c.nombre)}</strong><span>${esc(c.empresa||'')} ${esc(c.nif||'')}${c.direccion?'<br>'+esc(c.direccion):''}<br>${esc(c.tel||'Sin teléfono')}${c.email?' · '+esc(c.email):''}</span><div class="row" style="margin-top:7px"><button class="secondary" onclick="usarCliente(${c.id})">Usar en cálculo</button><button class="danger" onclick="delCliente(${c.id})">Eliminar</button></div></div>`).join(''):'<div class="muted">Aún no hay clientes.</div>';
+listaFacturas.innerHTML=db.facturas.length?db.facturas.slice().reverse().map(f=>`<div class="item"><strong>${f.numero} · ${esc(f.cliente||'Sin cliente')}</strong><span>${esc(f.matricula||'')} · ${euro(f.total)}</span><div style="margin:6px 0"><span class="badge ${f.estado==='Pagada'?'paid':'pending'}">${f.estado}</span></div><div class="row"><button class="secondary" onclick="verFactura(${f.id})">Ver</button><button class="secondary" onclick="togglePago(${f.id})">${f.estado==='Pagada'?'Marcar pendiente':'Marcar pagada'}</button><button class="secondary" onclick="whatsapp(${f.id})">WhatsApp</button><button class="secondary" onclick="emailFactura(${f.id})">Email</button><button class="secondary" onclick="imprimir(${f.id})">PDF / imprimir</button></div></div>`).join(''):'<div class="muted">No hay facturas.</div>';
+setMin.value=db.settings.min;setDesplazamiento.value=db.settings.desplazamiento||60;setIban.value=db.settings.iban||'';desplazamiento.value=db.settings.desplazamiento||60;
+}
+function usarCliente(id){calcCliente.value=id;go('calculador')}
+function delCliente(id){if(confirm('¿Eliminar cliente?')){db.clientes=db.clientes.filter(c=>c.id!==id);save()}}
+const zoneDefs=[
+{id:0,name:"Capó / frontal",x:100,y:150},{id:1,name:"Aleta delantera izquierda",x:175,y:105},
+{id:2,name:"Puerta delantera izquierda",x:245,y:105},{id:3,name:"Puerta trasera izquierda",x:355,y:105},
+{id:4,name:"Aleta trasera izquierda",x:425,y:105},{id:5,name:"Aleta delantera derecha",x:175,y:195},
+{id:6,name:"Puerta delantera derecha",x:245,y:195},{id:7,name:"Puerta trasera derecha",x:355,y:195},
+{id:8,name:"Aleta trasera derecha",x:425,y:195},{id:9,name:"Techo",x:300,y:150},{id:10,name:"Portón / trasera",x:500,y:150}
+];
+let zoneData=JSON.parse(localStorage.getItem(KEY+'_zones')||'{}');
+function saveZones(){localStorage.setItem(KEY+'_zones',JSON.stringify(zoneData))}
+function drawZones(){
+ const g=document.getElementById('zoneButtons'); if(!g)return;
+ g.innerHTML=zoneDefs.map(z=>`<g onclick="seleccionarZona(${z.id})" style="cursor:pointer">
+ <circle cx="${z.x}" cy="${z.y}" r="${zoneData[z.id]?.impactos?22:18}" fill="${zoneData[z.id]?.impactos?'#111827':'#fff'}" stroke="#111827" stroke-width="3"/>
+ <text x="${z.x}" y="${z.y+6}" text-anchor="middle" font-size="16" font-weight="700" fill="${zoneData[z.id]?.impactos?'#fff':'#111827'}">${z.id}</text>
+ </g>`).join('');
+ renderZones();
+}
+function seleccionarZona(id){
+ let z=zoneData[id]||{impactos:0,diametro:3,precio:0};
+ let impactos=prompt('Zona '+id+' · '+zoneDefs.find(x=>x.id===id).name+'\nNúmero de impactos:',z.impactos||1);
+ if(impactos===null)return;
+ impactos=Math.max(0,parseInt(impactos)||0);
+ if(!impactos){delete zoneData[id];saveZones();drawZones();return}
+ let diametro=prompt('Diámetro aproximado de los impactos (cm):',z.diametro||3);
+ if(diametro===null)return;
+ diametro=Math.max(0,parseFloat(diametro)||0);
+ let precio=prompt('Precio de la zona (€). Déjalo en 0 para calcularlo automáticamente:',z.precio||'');
+ if(precio===null)return;
+ zoneData[id]={impactos,diametro,precio:parseFloat(precio)||0};saveZones();drawZones();
+}
+function renderZones(){
+ const el=document.getElementById('zonasSeleccionadas'); if(!el)return;
+ const rows=Object.entries(zoneData);
+ el.innerHTML=rows.length?rows.map(([id,z])=>{
+   const auto=z.impactos*Math.max(+minimo.value||0,z.diametro*(+porcm.value||0));
+   const p=z.precio||auto;
+   return `<div class="item"><strong>Zona ${id} · ${zoneDefs.find(x=>x.id==id)?.name}</strong><span>${z.impactos} impactos · Ø ${z.diametro} cm · ${euro(p)}</span>
+   <button class="danger" style="margin-top:6px" onclick="delete zoneData[${id}];saveZones();drawZones()">Quitar</button></div>`;
+ }).join(''):'<div class="muted">No hay zonas seleccionadas.</div>';
+}
+const precioTabla={"1":{"1-3":50,"3-5":80,"5-10":130,"10-20":200,"20-30":300},"2":{"1-3":90,"3-5":150,"5-10":250,"10-20":390,"20-30":560},"3":{"1-3":120,"3-5":210,"5-10":360,"10-20":585,"20-30":null},"5":{"1-3":140,"3-5":260,"5-10":460,"10-20":null,"20-30":null},"6":{"1-3":150,"3-5":300,"5-10":575,"10-20":null,"20-30":null}};
+let tapizadoSeleccionado=!!db.tapizadoSeleccionado;
+function toggleTapizado(){
+ tapizadoSeleccionado=!tapizadoSeleccionado;
+ db.tapizadoSeleccionado=tapizadoSeleccionado;
+ save();
+ actualizarTapizado();
+}
+function actualizarTapizado(){
+ const b=document.getElementById('tapizadoBtn'), e=document.getElementById('tapizadoEstado');
+ if(!b||!e)return;
+ b.textContent=(tapizadoSeleccionado?'✓ ':'○ ')+'Destapizar / tapizar · +25,00 €';
+ b.style.background=tapizadoSeleccionado?'#111827':'';
+ b.style.color=tapizadoSeleccionado?'#fff':'';
+ e.textContent=tapizadoSeleccionado?'Seleccionado · se añadirán 25,00 € al presupuesto':'No seleccionado';
+}
+function calcular(){let q=cantidadImpactos.value,r=rangoDiametro.value,base=precioTabla[q][r];if(base===null){resultado.textContent='No disponible';detalle.textContent='Esta combinación figura como X en la tabla.';return 0}let total=base+(tapizadoSeleccionado?25:0);db.lastCalc=+total.toFixed(2);resultado.textContent=euro(db.lastCalc);detalle.textContent=`Tabla: ${q} impacto(s) · ${r} cm · Base ${euro(base)}${tapizadoSeleccionado?' · Destapizar/tapizar +25,00 €':''} · Tipo: ${dificultad.options[dificultad.selectedIndex].text} · Acceso: ${acceso.options[acceso.selectedIndex].text}`;return db.lastCalc}
+function crearFactura(){let total=calcular();if(!total)return alert('Calcula primero un precio.');let c=db.clientes.find(x=>x.id==calcCliente.value);let f={id:Date.now(),numero:'PDR-'+String(db.facturas.length+1).padStart(4,'0'),fecha:new Date().toLocaleDateString('es-ES'),cliente:c?.nombre||'',empresa:c?.empresa||'',nif:c?.nif||'',email:c?.email||'',direccion:c?.direccion||'',tel:c?.tel||'',matricula:calcMatricula.value,zona:zona.value,tamano:+tamano.value,total,estado:'Pendiente'};db.facturas.push(f);save();alert('Factura creada: '+f.numero);go('facturas')}
+function togglePago(id){let f=db.facturas.find(x=>x.id===id);f.estado=f.estado==='Pagada'?'Pendiente':'Pagada';save()}
+function verFactura(id){let f=db.facturas.find(x=>x.id===id);alert(`${f.numero}\\nCliente: ${f.cliente||'—'}\\nMatrícula: ${f.matricula||'—'}\\nTrabajo: ${f.zona}, ${f.tamano} cm\\nTotal: ${euro(f.total)}\\nEstado: ${f.estado}`)}
+function emailFactura(id){let f=db.facturas.find(x=>x.id===id);if(!f)return;let subject=`Factura ${f.numero} - PDR Manager Pro`;let body=`Hola ${f.cliente||''},%0D%0A%0D%0ATe envío la factura ${f.numero} de la reparación PDR.%0D%0AImporte: ${euro(f.total)}%0D%0AEstado: ${f.estado}%0D%0A%0D%0AIBAN: ${db.settings.iban||''}%0D%0A%0D%0AUn saludo.`;window.location.href=`mailto:${encodeURIComponent(f.email||'')}?subject=${encodeURIComponent(subject)}&body=${body}`}\nfunction whatsapp(id){let f=db.facturas.find(x=>x.id===id);let msg=`Hola ${f.cliente||''}, te envío la factura ${f.numero} de tu reparación PDR. Total: ${euro(f.total)}. Estado: ${f.estado}.`;let phone=(f.tel||'').replace(/\\D/g,'');let url=phone?`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`;window.open(url,'_blank')}
+function imprimir(id){let f=db.facturas.find(x=>x.id===id);let w=window.open('','_blank');w.document.write(`<html><head><title>${f.numero}</title><style>body{font-family:Arial;padding:30px}h1{font-size:24px}table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid #ddd}.total{font-size:24px;font-weight:bold}</style></head><body><h1>PDR Manager Pro</h1><h2>Factura ${f.numero}</h2><p>Fecha: ${f.fecha}</p><p>Cliente: ${esc(f.cliente)||'—'}<br>Teléfono: ${esc(f.tel)||'—'}<br>Matrícula: ${esc(f.matricula)||'—'}</p><table><tr><td>Reparación PDR · ${esc(f.zona)} · ${f.tamano} cm</td><td>${euro(f.total)}</td></tr></table><p class="total">TOTAL: ${euro(f.total)}</p><p>Estado: ${f.estado}</p><script>window.print()<\\/script></body></html>`);w.document.close()}
+function fotos(tipo,input){let arr=db.photos[tipo];[...input.files].forEach(file=>{let r=new FileReader();r.onload=e=>{arr.push(e.target.result);mostrarFotos(tipo);save()};r.readAsDataURL(file)});input.value=''}
+function mostrarFotos(tipo){let el=document.getElementById(tipo==='antes'?'antesPreview':'despuesPreview');el.innerHTML=db.photos[tipo].map(x=>`<img class="photo" src="${x}">`).join('')}
+function limpiarFirma(){let c=firma,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)}
+function initFirma(){let c=firma,ctx=c.getContext('2d');function pos(e){let r=c.getBoundingClientRect();return {x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}let down=false;c.width=Math.max(300,c.clientWidth*2);c.height=Math.max(150,c.clientHeight*2);ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';c.style.touchAction='none';c.addEventListener('pointerdown',e=>{e.preventDefault();down=true;c.setPointerCapture(e.pointerId);let p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});c.addEventListener('pointermove',e=>{if(!down)return;e.preventDefault();let p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke()});c.addEventListener('pointerup',e=>{down=false});c.addEventListener('pointercancel',e=>{down=false})}
+function guardarAjustes(){db.settings.min=+setMin.value||0;db.settings.desplazamiento=+setDesplazamiento.value||0;db.settings.iban=setIban.value.trim();minimo.value=db.settings.min;desplazamiento.value=db.settings.desplazamiento;save();alert('Parámetros guardados.')}
+function borrarTodo(){if(confirm('¿Borrar todos los datos de prueba?')){localStorage.removeItem(KEY);location.reload()}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+const granizoH={
+1:[30,35,40,50,55,60,65],2:[35,40,55,60,70,80,90],3:[40,50,60,70,85,95,115],4:[40,55,70,85,100,115,140],5:[50,60,80,95,115,130,160],6:[55,65,90,110,130,150,185],7:[60,70,95,120,145,170,210],8:[60,80,110,130,160,185,235],9:[65,85,115,145,175,205,260],10:[70,90,125,155,190,220,280],13:[80,100,140,175,215,260,330],16:[85,115,150,190,240,290,385],19:[90,120,160,210,265,325,430],22:[95,130,175,220,290,355,475],25:[100,140,180,240,305,385,515],28:[110,145,190,250,325,415,550],31:[115,150,200,265,350,445,590],34:[115,155,210,275,365,470,625],37:[120,160,215,290,385,500,665],40:[125,170,230,300,410,530,700],45:[130,180,240,325,440,575,770],50:[140,190,260,340,475,625,830],55:[150,200,270,365,505,670,895],60:[155,210,290,385,540,720,955],65:[160,220,300,410,570,770,1020],70:[170,235,320,425,605,815,1080],75:[180,240,330,450,635,865,1145],80:[185,250,350,470,670,910,1205],85:[190,265,360,490,700,960,1270],90:[200,275,380,510,740,1010,1330],95:[210,280,390,535,770,1055,null],100:[215,295,410,550,805,1105,null],110:[230,320,440,595,870,1200,null],120:[245,335,470,635,935,1295,null],130:[260,360,500,680,1000,null,null],140:[275,380,530,720,1070,null,null],150:[290,400,560,760,1135,null,null],160:[305,420,590,805,1200,null,null],170:[320,445,620,845,1265,null,null],180:[335,460,650,890,1325,null,null],190:[350,485,680,930,1390,null,null],200:[365,505,710,970,1455,null,null],210:[380,530,740,1015,1520,null,null],220:[395,545,770,1055,null,null],230:[410,570,800,1100,null,null],240:[425,590,830,1140,null,null],250:[440,610,860,1180,null,null],260:[455,630,890,1225,null,null],270:[475,650,920,1270,null,null],280:[485,670,950,1315,null,null],300:[515,715,1010,1405,null,null],325:[560,770,1080,1515,null,null],350:[595,815,1160,null,null,null],375:[630,870,1230,null,null,null],400:[665,925,1300,null,null,null]
+};
+const granizoV={
+1:[30,35,40,50,55,60,65],2:[35,50,55,70,85,85,95],3:[40,55,65,85,100,110,125],4:[50,65,80,100,125,130,155],5:[55,70,90,115,145,155,185],6:[60,80,100,125,160,175,210],7:[65,85,110,140,175,190,230],8:[65,90,120,150,190,210,250],9:[70,95,125,160,205,230,270],10:[80,100,140,175,220,245,295],11:[80,110,145,185,235,265,310],12:[85,115,155,200,250,300,355],13:[85,120,160,210,265,320,355],14:[90,125,175,220,280,330,380],15:[90,130,180,235,295,335,395],16:[95,140,190,245,310,355,420],17:[95,145,200,260,325,370,440],18:[100,150,210,270,340,390,460],19:[100,155,215,280,355,410,480],20:[110,160,230,295,370,425,505],21:[110,170,235,305,385,445,null],22:[115,175,240,310,395,455,null],23:[120,175,245,325,410,475,null],24:[120,180,250,330,420,485,null],25:[120,185,260,340,430,505,null],26:[125,190,265,350,445,null,null],27:[125,190,270,360,455,null,null],28:[130,200,275,365,470,null,null],29:[130,205,280,380,480,null,null],30:[140,210,290,385,490,null,null],31:[140,210,295,395,505,null,null],32:[145,215,300,400,null,null,null],33:[145,220,305,415,null,null,null],34:[150,230,310,420,null,null,null],35:[150,230,320,430,null,null,null],36:[155,235,325,440,null,null,null],37:[155,240,330,450,null,null,null],38:[160,245,335,455,null,null,null],39:[160,245,340,470,null,null,null],40:[170,250,350,475,null,null,null],41:[170,260,355,485,null,null,null],42:[175,265,360,490,null,null,null],43:[175,265,365,505,null,null,null],44:[180,270,370,null,null,null,null],45:[180,275,380,null,null,null,null],46:[185,280,385,null,null,null,null],47:[185,280,390,null,null,null,null],48:[190,290,395,null,null,null,null],49:[190,295,400,null,null,null],50:[200,300,410,null,null,null,null]
+};
+const granizoMmH=Object.keys(granizoH).map(Number);
+const granizoMmV=Object.keys(granizoV).map(Number);
+function actualizarGranizo(){
+ const tipo=gTipo.value, data=tipo==='h'?granizoH:granizoV, mm=tipo==='h'?granizoMmH:granizoMmV;
+ gMm.innerHTML=mm.map(x=>`<option value="${x}">${x} mm</option>`).join('');
+ const vals=data[gMm.value]||[];
+ gPieza.innerHTML=[10,20,30,40,50,60,70].map((x,i)=>`<option value="${x}" ${vals[i]==null?'disabled':''}>${x}</option>`).join('');
+ renderTablaGranizo();
+}
+function calcularGranizo(){
+ const data=gTipo.value==='h'?granizoH:granizoV, vals=data[gMm.value]||[], idx=[10,20,30,40,50,60,70].indexOf(+gPieza.value), base=vals[idx];
+ if(base==null){gResultado.textContent='No disponible';gDetalle.textContent='Esta combinación no tiene precio en la tabla.';return 0}
+ const total=base+(+gUrgencia.value||0)+(+gDesplazamiento.value||0);
+ gResultado.textContent=euro(total);gDetalle.textContent=`Base ${euro(base)} + urgencia ${euro(+gUrgencia.value||0)} + desplazamiento ${euro(+gDesplazamiento.value||0)}`;return total;
+}
+function renderTablaGranizo(){
+ const data=gTipo.value==='h'?granizoH:granizoV, mm=gTipo.value==='h'?granizoMmH:granizoMmV;
+ tablaGranizo.innerHTML='<thead><tr><th>mm</th><th>10</th><th>20</th><th>30</th><th>40</th><th>50</th><th>60</th><th>70</th></tr></thead><tbody>'+mm.map(m=>`<tr><td>${m}</td>${[0,1,2,3,4,5,6].map(i=>`<td>${data[m][i]==null?'X':data[m][i]+' €'}</td>`).join('')}</tr>`).join('')+'</tbody>';
+}
+
+render();drawZones();actualizarTapizado();actualizarGranizo();mostrarFotos('antes');mostrarFotos('despues');setTimeout(initFirma,100);
+</script>
+</body></html>
