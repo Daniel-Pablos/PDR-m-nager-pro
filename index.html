@@ -210,31 +210,66 @@ let zonaTapizado=false;
 const precioTabla={"1":{"1-3":50,"3-5":80,"5-10":130,"10-20":200,"20-30":300},"2":{"1-3":90,"3-5":150,"5-10":250,"10-20":390,"20-30":560},"3":{"1-3":120,"3-5":210,"5-10":360,"10-20":585,"20-30":null},"5":{"1-3":140,"3-5":260,"5-10":460,"10-20":null,"20-30":null},"6":{"1-3":150,"3-5":300,"5-10":575,"10-20":null,"20-30":null}};
 function saveZones(){localStorage.setItem(KEY+'_zones',JSON.stringify(zoneData))}
 function normalizarLineasZona(d){
-  if(Array.isArray(d?.lineas) && d.lineas.length) return d.lineas.map(x=>({impactos:+x.impactos||1,diametro:x.diametro||"1-3"}));
-  if(d && d.impactos) return [{impactos:+d.impactos||1,diametro:d.diametro||"1-3"}];
+  if(Array.isArray(d?.lineas) && d.lineas.length) return d.lineas.map(x=>({impactos:+x.impactos||1,diametro:x.diametro||"1-3",precioManual:x.precioManual!=null?+x.precioManual:null}));
+  if(d && d.impactos) return [{impactos:+d.impactos||1,diametro:d.diametro||"1-3",precioManual:d.precioManual!=null?+d.precioManual:null}];
   return [{impactos:1,diametro:"1-3"}];
 }
 function opcionesImpactos(valor){
   return ['1','2','3','5','6'].map(v=>`<option value="${v}" ${String(valor)===v?'selected':''}>${v}</option>`).join('');
 }
 function opcionesDiametro(valor){
-  return [['1-3','1–3 cm'],['3-5','3–5 cm'],['5-10','5–10 cm'],['10-20','10–20 cm'],['20-30','20–30 cm']]
+  return [['0.5','0,5 cm'],['0.6','0,6 cm'],['0.7','0,7 cm'],['0.8','0,8 cm'],['0.9','0,9 cm'],
+          ['1-3','1–3 cm'],['3-5','3–5 cm'],['5-10','5–10 cm'],['10-20','10–20 cm'],['20-30','20–30 cm']]
     .map(([v,t])=>`<option value="${v}" ${valor===v?'selected':''}>${t}</option>`).join('');
 }
 function renderLineasZona(lineas){
   const el=document.getElementById('zonaLineas'); if(!el)return;
-  el.innerHTML=lineas.map((l,i)=>`
-    <div class="grid zona-linea" style="margin-top:${i?8:0};align-items:end">
+  el.innerHTML=lineas.map((l,i)=>{
+    const manual=(l.precioManual!=null)?+l.precioManual:null;
+    const base=precioTabla[String(l.impactos)]?.[l.diametro];
+    const needsManual=(base===null||base===undefined||manual!==null);
+    return `<div class="grid zona-linea" style="margin-top:${i?8:0};align-items:end">
       <div><label>Impactos</label><select class="zl-impactos">${opcionesImpactos(l.impactos)}</select></div>
-      <div><label>Diámetro</label><select class="zl-diametro">${opcionesDiametro(l.diametro)}</select></div>
+      <div><label>Diámetro</label><select class="zl-diametro" onchange="refrescarPrecioManual()">${opcionesDiametro(l.diametro)}</select></div>
+      <div class="zl-manual-wrap" style="${needsManual?'':'display:none'}">
+        <label>Precio manual (€)</label>
+        <div class="row" style="align-items:center">
+          <button type="button" class="secondary" onclick="ajustarPrecioManual(${i},-1)">− €</button>
+          <input class="zl-manual" type="number" min="0" step="1" value="${manual!=null?manual:0}" style="max-width:100px" onchange="actualizarZonaPrecio()">
+          <button type="button" class="secondary" onclick="ajustarPrecioManual(${i},1)">+ €</button>
+        </div>
+      </div>
       ${lineas.length>1?`<div><button class="danger" type="button" onclick="quitarLineaZona(${i})">Quitar</button></div>`:''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+function refrescarPrecioManual(){
+  const rows=[...document.querySelectorAll('#zonaLineas .zona-linea')];
+  rows.forEach(row=>{
+    const imp=+row.querySelector('.zl-impactos').value;
+    const dia=row.querySelector('.zl-diametro').value;
+    const base=precioTabla[String(imp)]?.[dia];
+    const wrap=row.querySelector('.zl-manual-wrap');
+    if(wrap) wrap.style.display=(base==null)?'block':'none';
+  });
+  actualizarZonaPrecio();
+}
+function ajustarPrecioManual(i,delta){
+  const rows=[...document.querySelectorAll('#zonaLineas .zona-linea')];
+  const input=rows[i]?.querySelector('.zl-manual');
+  if(!input)return;
+  input.value=Math.max(0,(+input.value||0)+delta);
+  actualizarZonaPrecio();
 }
 function leerLineasZona(){
-  return [...document.querySelectorAll('#zonaLineas .zona-linea')].map(row=>({
-    impactos:+row.querySelector('.zl-impactos').value,
-    diametro:row.querySelector('.zl-diametro').value
-  }));
+  return [...document.querySelectorAll('#zonaLineas .zona-linea')].map(row=>{
+    const impactos=+row.querySelector('.zl-impactos').value;
+    const diametro=row.querySelector('.zl-diametro').value;
+    const base=precioTabla[String(impactos)]?.[diametro];
+    const manualInput=row.querySelector('.zl-manual');
+    const manual=(base==null && manualInput)?Math.max(0,+manualInput.value||0):null;
+    return {impactos,diametro,precioManual:manual};
+  });
 }
 function anadirLineaZona(){
   const lineas=leerLineasZona();
@@ -281,7 +316,11 @@ function precioLineas(lineas){
  let total=0, invalid=false;
  for(const l of lineas){
    const base=precioTabla[String(l.impactos)]?.[l.diametro];
-   if(base===null||base===undefined){invalid=true;continue}
+   if(base===null||base===undefined){
+     if(l.precioManual!=null && Number.isFinite(+l.precioManual)){ total+=Math.max(0,+l.precioManual); }
+     else {invalid=true;}
+     continue;
+   }
    total+=base;
  }
  return {total,invalid};
@@ -298,7 +337,7 @@ function guardarZona(){
  if(zonaActiva===null)return;
  const lineas=leerLineasZona();
  const calc=precioLineas(lineas);
- if(calc.invalid){alert('Una de las combinaciones de impactos y diámetro figura como X en la tabla.');return}
+ if(calc.invalid){alert('Una de las combinaciones no tiene precio en la tabla y necesita que introduzcas un precio manual.');return}
  zoneData[zonaActiva]={lineas,tapizado:zonaTapizado};
  saveZones();drawZones();renderZones();actualizarZonaPrecio();
 }
