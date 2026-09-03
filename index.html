@@ -30,6 +30,10 @@ button.danger{background:#fee2e2;color:#991b1b;border:0;border-radius:9px;paddin
 .stat{font-size:25px;font-weight:800}.photo{max-width:110px;max-height:110px;border-radius:8px;margin:5px}
 .sig{border:1px dashed #9ca3af;width:100%;height:150px;border-radius:10px;touch-action:none;background:#fff}
 table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
+.price-btn{width:100%;border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:8px;font-weight:700;cursor:pointer}
+.price-btn:hover{background:#f3f4f6}.price-btn.selected{background:#111827;color:#fff;border-color:#111827}
+.price-table-wrap{overflow:auto}.price-table-wrap table{min-width:560px}.price-note{margin-top:8px}
+.selection-box{margin-top:12px;padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb}
 
 .zone-overlay{position:absolute;inset:0}.zone-hit{position:absolute;border:2px solid transparent;background:transparent;border-radius:8px;cursor:pointer;padding:0}.zone-hit:hover,.zone-hit:focus{border-color:#111827;background:rgba(255,255,255,.12);outline:none}.side-labels{display:flex;justify-content:space-between;font-weight:800;margin:0 35px 4px}</style>
 </head>
@@ -85,6 +89,11 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 <div id="zonaLineas"></div>
 <button class="secondary" type="button" onclick="anadirLineaZona()" style="margin-top:8px">+ Añadir otro diámetro</button>
 </div>
+<div class="selection-box">
+<h4 style="margin:0 0 8px">Tabla de precios · Reparaciones</h4>
+<div class="muted">Pulsa directamente sobre el precio que quieras añadir a esta zona. Cada clic añade una reparación y se suma al total.</div>
+<div id="tablaPDRWrap" class="price-table-wrap" style="margin-top:8px"></div>
+</div>
 <div class="row" style="margin-top:10px">
 <button id="zonaTapizadoBtn" class="secondary" onclick="toggleZonaTapizado()">○ Destapizar / tapizar</button>
 <span id="zonaTapizadoEstado" class="muted"></span>
@@ -122,14 +131,16 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 <div><label>Tipo de pieza</label><select id="gTipo" onchange="actualizarGranizo()"><option value="h">Pieza horizontal</option><option value="v">Pieza vertical</option></select></div>
 <div><label>Tamaño del daño (mm)</label><select id="gMm" onchange="actualizarGranizo()"></select></div>
 <div><label>Tamaño de pieza (cm)</label><select id="gPieza" onchange="actualizarGranizo()"><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option><option value="60">60</option><option value="70">70</option></select></div>
-<div><label>Urgencia (€)</label><input id="gUrgencia" type="number" step=".01" value="60"></div>
-<div><label>Desplazamiento (€)</label><input id="gDesplazamiento" type="number" step=".01" value="60"></div>
+<div><label>Urgencia (€)</label><input id="gUrgencia" type="number" step=".01" value="60" oninput="renderGranizoSeleccion()"></div>
+<div><label>Desplazamiento (€)</label><input id="gDesplazamiento" type="number" step=".01" value="60" oninput="renderGranizoSeleccion()"></div>
 </div>
 <br><button class="primary" onclick="calcularGranizo()">Calcular granizo</button>
 <div class="card" style="margin-top:12px;background:#f9fafb"><div class="muted">Precio de reparación</div><div id="gResultado" class="total">0,00 €</div><div id="gDetalle" class="muted"></div></div>
 </div>
 <div class="card"><h2>Tabla de precios · Granizo</h2>
-<div style="overflow:auto"><table id="tablaGranizo"></table></div>
+<div class="muted">Pulsa una celda con precio para seleccionarla y sumarla. Cada clic añade una pieza a la reparación de granizo.</div>
+<div style="overflow:auto;margin-top:8px"><table id="tablaGranizo"></table></div>
+<div id="granizoSeleccionBox" class="selection-box"></div>
 <p class="muted">Los espacios sin precio en el documento original se mantienen como no disponibles.</p>
 </div>
 </section>
@@ -208,6 +219,7 @@ let zoneData=JSON.parse(localStorage.getItem(KEY+'_zones')||'{}');
 let zonaActiva=null;
 let zonaTapizado=false;
 const precioTabla={"1":{"1-3":50,"3-5":80,"5-10":130,"10-20":200,"20-30":300},"2":{"1-3":90,"3-5":150,"5-10":250,"10-20":390,"20-30":560},"3":{"1-3":120,"3-5":210,"5-10":360,"10-20":585,"20-30":null},"5":{"1-3":140,"3-5":260,"5-10":460,"10-20":null,"20-30":null},"6":{"1-3":150,"3-5":300,"5-10":575,"10-20":null,"20-30":null}};
+const pdrDiametros=["1-3","3-5","5-10","10-20","20-30"];
 function saveZones(){localStorage.setItem(KEY+'_zones',JSON.stringify(zoneData))}
 function normalizarLineasZona(d){
   if(Array.isArray(d?.lineas) && d.lineas.length) return d.lineas.map(x=>({impactos:+x.impactos||1,diametro:x.diametro||"1-3",precioManual:x.precioManual!=null?+x.precioManual:null}));
@@ -256,6 +268,7 @@ function refrescarPrecioManual(){
     if(wrap) wrap.style.display=(base==null)?'block':'none';
   });
   actualizarZonaPrecio();
+  marcarPreciosPDRSeleccionados();
 }
 function ajustarPrecioManual(i,delta){
   const rows=[...document.querySelectorAll('#zonaLineas .zona-linea')];
@@ -279,6 +292,7 @@ function anadirLineaZona(){
   lineas.push({impactos:1,diametro:"1-3"});
   renderLineasZona(lineas);
   actualizarZonaPrecio();
+  marcarPreciosPDRSeleccionados();
 }
 function quitarLineaZona(i){
   const lineas=leerLineasZona();
@@ -286,6 +300,41 @@ function quitarLineaZona(i){
   lineas.splice(i,1);
   renderLineasZona(lineas);
   actualizarZonaPrecio();
+  marcarPreciosPDRSeleccionados();
+  marcarPreciosPDRSeleccionados();
+}
+function renderTablaPDR(){
+  const el=document.getElementById('tablaPDRWrap'); if(!el)return;
+  let rows='';
+  for(const imp of [1,2,3,5,6]){
+    rows += `<tr><th>${imp}</th>` + pdrDiametros.map(d=>{
+      const v=precioTabla[String(imp)]?.[d];
+      return v==null
+        ? `<td><span class="muted">X</span></td>`
+        : `<td><button type="button" class="price-btn" data-pdr-imp="${imp}" data-pdr-dia="${d}" onclick="seleccionarPrecioPDR(${imp},'${d}',${v})">${v} €</button></td>`;
+    }).join('') + '</tr>';
+  }
+  el.innerHTML=`<table><thead><tr><th>Cantidad</th>${pdrDiametros.map(d=>`<th>${d} cm</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+  marcarPreciosPDRSeleccionados();
+}
+function seleccionarPrecioPDR(impactos,diametro,precio){
+  if(zonaActiva===null){alert('Primero selecciona una zona del vehículo.');return;}
+  const lineas=leerLineasZona();
+  lineas.push({impactos:Number(impactos),diametro,precioManual:null});
+  renderLineasZona(lineas);
+  actualizarZonaPrecio();
+  marcarPreciosPDRSeleccionados();
+  marcarPreciosPDRSeleccionados();
+}
+function marcarPreciosPDRSeleccionados(){
+  const btns=[...document.querySelectorAll('[data-pdr-imp][data-pdr-dia]')];
+  if(!btns.length)return;
+  const lineas=zonaActiva===null?[]:leerLineasZona();
+  btns.forEach(b=>{
+    const imp=Number(b.dataset.pdrImp), dia=b.dataset.pdrDia;
+    const selected=lineas.some(l=>Number(l.impactos)===imp && l.diametro===dia);
+    b.classList.toggle('selected',selected);
+  });
 }
 function seleccionarZona(id){
  zonaActiva=id;
@@ -295,6 +344,7 @@ function seleccionarZona(id){
  zonaEditor.style.display='block';
  zonaEditorTitulo.textContent='Zona '+id+' · '+z.name+(z.side==='I'?' · IZQUIERDA':z.side==='D'?' · DERECHA':'');
  renderLineasZona(normalizarLineasZona(d));
+ renderTablaPDR();
  actualizarZonaTapizado();
  actualizarZonaPrecio();
  renderZones();
@@ -425,17 +475,74 @@ function actualizarGranizo(){
  gPieza.innerHTML=[10,20,30,40,50,60,70].map((x,i)=>`<option value="${x}" ${vals[i]==null?'disabled':''}>${x}</option>`).join('');
  renderTablaGranizo();
 }
+let granizoSelecciones=[];
+function euro(n){return (Number(n)||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'}
+function actualizarGranizo(){
+ const tipo=gTipo.value, data=tipo==='h'?granizoH:granizoV, mm=tipo==='h'?granizoMmH:granizoMmV;
+ gMm.innerHTML=mm.map(x=>`<option value="${x}">${x} mm</option>`).join('');
+ const vals=data[gMm.value]||[];
+ gPieza.innerHTML=[10,20,30,40,50,60,70].map((x,i)=>`<option value="${x}" ${vals[i]==null?'disabled':''}>${x}</option>`).join('');
+ renderTablaGranizo();
+ renderGranizoSeleccion();
+}
+function seleccionarGranizo(mm,pieza,precio){
+ granizoSelecciones.push({tipo:gTipo.value,mm:Number(mm),pieza:Number(pieza),precio:Number(precio)});
+ renderTablaGranizo();
+ renderGranizoSeleccion();
+}
+function quitarGranizoSeleccion(i){
+ granizoSelecciones.splice(i,1);
+ renderTablaGranizo();
+ renderGranizoSeleccion();
+}
+function limpiarGranizoSeleccion(){
+ granizoSelecciones=[];
+ renderTablaGranizo();
+ renderGranizoSeleccion();
+ gResultado.textContent='0,00 €';
+ gDetalle.textContent='';
+}
+function totalGranizoSeleccion(){
+ return granizoSelecciones.reduce((s,x)=>s+(Number(x.precio)||0),0);
+}
+function renderGranizoSeleccion(){
+ const box=document.getElementById('granizoSeleccionBox'); if(!box)return;
+ if(!granizoSelecciones.length){
+   box.innerHTML='<div class="muted">No hay piezas de granizo seleccionadas.</div>';
+   return;
+ }
+ const base=totalGranizoSeleccion();
+ const urg=+gUrgencia.value||0, despl=+gDesplazamiento.value||0;
+ const total=base+urg+despl;
+ box.innerHTML=`<strong>Piezas seleccionadas</strong>`+
+   granizoSelecciones.map((x,i)=>`<div class="row" style="justify-content:space-between;margin-top:6px">
+      <span>${x.tipo==='h'?'Horizontal':'Vertical'} · ${x.mm} mm · pieza ${x.pieza} · ${euro(x.precio)}</span>
+      <button type="button" class="danger" onclick="quitarGranizoSeleccion(${i})">Quitar</button>
+    </div>`).join('')+
+   `<div style="margin-top:10px;font-weight:800">Total selección: ${euro(base)}</div>`+
+   `<div class="muted">Con urgencia y desplazamiento: ${euro(total)}</div>`;
+ gResultado.textContent=euro(total);
+ gDetalle.textContent=`Base seleccionada ${euro(base)} + urgencia ${euro(urg)} + desplazamiento ${euro(despl)}`;
+}
 function calcularGranizo(){
- const data=gTipo.value==='h'?granizoH:granizoV, vals=data[gMm.value]||[], idx=[10,20,30,40,50,60,70].indexOf(+gPieza.value), base=vals[idx];
- if(base==null){gResultado.textContent='No disponible';gDetalle.textContent='Esta combinación no tiene precio en la tabla.';return 0}
- const total=base+(+gUrgencia.value||0)+(+gDesplazamiento.value||0);
- gResultado.textContent=euro(total);gDetalle.textContent=`Base ${euro(base)} + urgencia ${euro(+gUrgencia.value||0)} + desplazamiento ${euro(+gDesplazamiento.value||0)}`;return total;
+ const base=totalGranizoSeleccion(), urg=+gUrgencia.value||0, despl=+gDesplazamiento.value||0;
+ if(!granizoSelecciones.length){gResultado.textContent='0,00 €';gDetalle.textContent='Selecciona una o más celdas de la tabla.';return 0}
+ const total=base+urg+despl;
+ gResultado.textContent=euro(total);
+ gDetalle.textContent=`Base seleccionada ${euro(base)} + urgencia ${euro(urg)} + desplazamiento ${euro(despl)}`;
+ return total;
 }
 function renderTablaGranizo(){
  const data=gTipo.value==='h'?granizoH:granizoV, mm=gTipo.value==='h'?granizoMmH:granizoMmV;
- tablaGranizo.innerHTML='<thead><tr><th>mm</th><th>10</th><th>20</th><th>30</th><th>40</th><th>50</th><th>60</th><th>70</th></tr></thead><tbody>'+mm.map(m=>`<tr><td>${m}</td>${[0,1,2,3,4,5,6].map(i=>`<td>${data[m][i]==null?'X':data[m][i]+' €'}</td>`).join('')}</tr>`).join('')+'</tbody>';
+ tablaGranizo.innerHTML='<thead><tr><th>mm</th><th>10</th><th>20</th><th>30</th><th>40</th><th>50</th><th>60</th><th>70</th></tr></thead><tbody>'+
+ mm.map(m=>`<tr><th>${m}</th>${[10,20,30,40,50,60,70].map((pieza,i)=>{
+   const val=data[m][i];
+   if(val==null) return '<td><span class="muted">X</span></td>';
+   const selected=granizoSelecciones.some(x=>x.tipo===gTipo.value&&x.mm===m&&x.pieza===pieza);
+   return `<td><button type="button" class="price-btn ${selected?'selected':''}" onclick="seleccionarGranizo(${m},${pieza},${val})">${val} €</button></td>`;
+ }).join('')}</tr>`).join('')+'</tbody>';
 }
 
-render();drawZones();actualizarTapizado();actualizarGranizo();mostrarFotos('antes');mostrarFotos('despues');setTimeout(initFirma,100);
+render();drawZones();renderTablaPDR();actualizarTapizado();actualizarGranizo();renderGranizoSeleccion();mostrarFotos('antes');mostrarFotos('despues');setTimeout(initFirma,100);
 </script>
 </body></html>
