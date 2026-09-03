@@ -86,7 +86,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 <h3 style="margin-top:0">Tabla de precios de reparaciones</h3>
 <div class="muted">Tabla de golpes de parking y varios. Los precios son por cantidad de abolladuras en una misma pieza. Selecciona primero una zona del vehículo y después pulsa el precio que quieras aplicar.</div>
 <div class="price-table-wrap" style="margin-top:8px"><table><thead><tr><th>Cantidad</th><th>1–3 cm</th><th>3–5 cm</th><th>5–10 cm</th><th>10–20 cm</th><th>20–30 cm</th></tr></thead><tbody><tr><th>1</th><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="1" data-pdr-dia="1-3" onclick="seleccionarPrecioPDR(1,'1-3',50)">50 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="1" data-pdr-dia="3-5" onclick="seleccionarPrecioPDR(1,'3-5',80)">80 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="1" data-pdr-dia="5-10" onclick="seleccionarPrecioPDR(1,'5-10',130)">130 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="1" data-pdr-dia="10-20" onclick="seleccionarPrecioPDR(1,'10-20',200)">200 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="1" data-pdr-dia="20-30" onclick="seleccionarPrecioPDR(1,'20-30',300)">300 €</button></td></tr><tr><th>2</th><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="2" data-pdr-dia="1-3" onclick="seleccionarPrecioPDR(2,'1-3',90)">90 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="2" data-pdr-dia="3-5" onclick="seleccionarPrecioPDR(2,'3-5',150)">150 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="2" data-pdr-dia="5-10" onclick="seleccionarPrecioPDR(2,'5-10',250)">250 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="2" data-pdr-dia="10-20" onclick="seleccionarPrecioPDR(2,'10-20',390)">390 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="2" data-pdr-dia="20-30" onclick="seleccionarPrecioPDR(2,'20-30',560)">560 €</button></td></tr><tr><th>3</th><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="3" data-pdr-dia="1-3" onclick="seleccionarPrecioPDR(3,'1-3',120)">120 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="3" data-pdr-dia="3-5" onclick="seleccionarPrecioPDR(3,'3-5',210)">210 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="3" data-pdr-dia="5-10" onclick="seleccionarPrecioPDR(3,'5-10',360)">360 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="3" data-pdr-dia="10-20" onclick="seleccionarPrecioPDR(3,'10-20',585)">585 €</button></td><td><span class="muted">X</span></td></tr><tr><th>5</th><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="5" data-pdr-dia="1-3" onclick="seleccionarPrecioPDR(5,'1-3',140)">140 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="5" data-pdr-dia="3-5" onclick="seleccionarPrecioPDR(5,'3-5',260)">260 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="5" data-pdr-dia="5-10" onclick="seleccionarPrecioPDR(5,'5-10',460)">460 €</button></td><td><span class="muted">X</span></td><td><span class="muted">X</span></td></tr><tr><th>6</th><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="6" data-pdr-dia="1-3" onclick="seleccionarPrecioPDR(6,'1-3',150)">150 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="6" data-pdr-dia="3-5" onclick="seleccionarPrecioPDR(6,'3-5',300)">300 €</button></td><td><button type="button" class="price-btn pdr-static-btn" data-pdr-imp="6" data-pdr-dia="5-10" onclick="seleccionarPrecioPDR(6,'5-10',575)">575 €</button></td><td><span class="muted">X</span></td><td><span class="muted">X</span></td></tr></tbody></table></div>
-<div class="muted" style="margin-top:8px">Suplementos de la tabla: urgencia +40 € · desplazamiento +40 €. En combinaciones no incluidas puedes usar el precio manual dentro de la zona.</div>
+<div class="muted" style="margin-top:8px">Suplementos de la tabla: urgencia +60 € · desplazamiento +40 €. En combinaciones no incluidas puedes usar el precio manual dentro de la zona.</div>
 </div>
 <div id="zonaEditor" class="card" style="margin-top:12px;background:#fff;display:none">
 <h3 id="zonaEditorTitulo" style="margin-top:0">Zona</h3>
@@ -111,7 +111,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 <div class="grid">
 <div><label>Cliente</label><select id="calcCliente"></select></div>
 <div><label>Matrícula</label><input id="calcMatricula" placeholder="1234 ABC"></div>
-<div><label>Suplementos</label><div class="row"><button type="button" id="urgenciaBtn" class="secondary" onclick="toggleUrgenciaPDR()">○ Urgencia +40,00 €</button><span class="badge">Desplazamiento fijo +40,00 €</span></div><div id="suplementosPdrEstado" class="muted" style="margin-top:6px">Sin suplementos</div></div>
+<div><label>Suplementos</label><div class="row"><button type="button" id="urgenciaBtn" class="secondary" onclick="toggleUrgenciaPDR()">○ Urgencia +60,00 €</button><span class="badge">Desplazamiento fijo +40,00 €</span></div><div id="suplementosPdrEstado" class="muted" style="margin-top:6px">Sin suplementos</div></div>
 </div>
 </div>
 
@@ -132,7 +132,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 <div><label>Tipo de pieza</label><select id="gTipo" onchange="actualizarGranizo()"><option value="h">Pieza horizontal</option><option value="v">Pieza vertical</option></select></div>
 <div><label>Tamaño del daño (mm)</label><select id="gMm" onchange="actualizarGranizo()"></select></div>
 <div><label>Tamaño de pieza (cm)</label><select id="gPieza" onchange="actualizarGranizo()"><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option><option value="60">60</option><option value="70">70</option></select></div>
-<div><label>Suplementos</label><div class="row"><button type="button" id="gUrgenciaBtn" class="secondary" onclick="toggleUrgenciaGranizo()">○ Urgencia +40,00 €</button><span class="badge">Desplazamiento fijo +40,00 €</span></div><div id="suplementosGranizoEstado" class="muted" style="margin-top:6px">Sin suplementos</div></div>
+<div><label>Suplementos</label><div class="row"><button type="button" id="gUrgenciaBtn" class="secondary" onclick="toggleUrgenciaGranizo()">○ Urgencia +60,00 €</button><span class="badge">Desplazamiento fijo +40,00 €</span></div><div id="suplementosGranizoEstado" class="muted" style="margin-top:6px">Sin suplementos</div></div>
 </div>
 <br><button class="primary" onclick="calcularGranizo()">Calcular granizo</button>
 <div class="card" style="margin-top:12px;background:#f9fafb"><div class="muted">Precio de reparación</div><div id="gResultado" class="total">0,00 €</div><div id="gDetalle" class="muted"></div></div>
@@ -347,11 +347,11 @@ function marcarPreciosPDRSeleccionados(){
   });
 }
 let urgenciaPDRActiva=false;
-let desplazamientoPDRActivo=false;
+let desplazamientoPDRActivo=true;
 let urgenciaGranizoActiva=false;
-let desplazamientoGranizoActivo=false;
+let desplazamientoGranizoActivo=true;
 function importeUrgencia(){return +(db.settings?.min ?? 60)||60}
-function importeDesplazamiento(){return +(db.settings?.desplazamiento ?? 60)||60}
+function importeDesplazamiento(){return 40}
 function pintarBotonSuplemento(id,activo,texto,importe){
  const b=document.getElementById(id); if(!b)return;
  b.textContent=(activo?'✓ ':'○ ')+texto+' +'+importe.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
@@ -376,8 +376,15 @@ function toggleDesplazamientoGranizo(){
 function toggleZonaTapizado(){
  if(zonaActiva===null)return;
  zonaTapizado=!zonaTapizado;
+ // Persist the current state immediately so the main PDR total includes
+ // the supplement as soon as the button is clicked.
+ const lineas=leerLineasZona();
+ zoneData[zonaActiva]={lineas,tapizado:zonaTapizado};
+ saveZones();
  actualizarZonaTapizado();
  actualizarZonaPrecio();
+ renderZones();
+ calcular();
 }
 function actualizarZonaTapizado(){
  const b=document.getElementById('zonaTapizadoBtn'),e=document.getElementById('zonaTapizadoEstado');
@@ -462,7 +469,7 @@ function calcular(){
  });
  if(invalid){resultado.textContent='No disponible';detalle.textContent='Hay una zona con una combinación no disponible en la tabla.';return 0}
  const urg=urgenciaPDRActiva?importeUrgencia():0;
- const despl=desplazamientoPDRActivo?importeDesplazamiento():0;
+ const despl=40;
  total+=urg+despl;
  if(urg)partes.push('Urgencia '+euro(urg));
  if(despl)partes.push('Desplazamiento '+euro(despl));
@@ -548,7 +555,7 @@ if(totalEl) totalEl.textContent=euro(totalGranizoSeleccion());
    return;
  }
  const base=totalGranizoSeleccion();
- const urg=urgenciaGranizoActiva?importeUrgencia():0, despl=desplazamientoGranizoActivo?importeDesplazamiento():0;
+ const urg=urgenciaGranizoActiva?importeUrgencia():0, despl=40;
  const total=base+urg+despl;
  box.innerHTML=`<strong>Piezas seleccionadas</strong>`+
    granizoSelecciones.map((x,i)=>`<div class="row" style="justify-content:space-between;margin-top:6px">
