@@ -152,19 +152,33 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 </div>
 </section>
 <section id="clientes" class="screen">
-<div class="card"><h2>Nuevo cliente</h2><div class="grid">
-<div><input id="cId" type="hidden"><label>Nombre</label><input id="cNombre"></div>
-<div><label>NIF / NIE</label><input id="cNif"></div>
-<div><label>Nombre de empresa</label><input id="cEmpresa"></div>
-<div><label>Teléfono / WhatsApp</label><input id="cTel"></div>
-<div><label>Email</label><input id="cEmail" type="email"></div>
-<div><label>Dirección</label><input id="cDireccion"></div>
-<div><label>Notas</label><input id="cNotas"></div>
-</div><br><button class="primary" onclick="guardarCliente()">Guardar cliente</button></div>
-<div class="card"><h2>Clientes</h2><div id="listaClientes" class="list"></div></div>
+<div class="card">
+  <h2>Clientes</h2>
+  <div class="grid">
+    <div><input id="cId" type="hidden"><label>Nombre</label><input id="cNombre"></div>
+    <div><label>NIF / NIE</label><input id="cNif"></div>
+    <div><label>Nombre de empresa</label><input id="cEmpresa"></div>
+    <div><label>Teléfono / WhatsApp</label><input id="cTel"></div>
+    <div><label>Email</label><input id="cEmail" type="email"></div>
+    <div><label>Dirección</label><input id="cDireccion"></div>
+    <div><label>Notas</label><input id="cNotas"></div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button class="primary" id="btnGuardarCliente" onclick="guardarCliente()">Guardar cliente</button>
+    <button class="secondary" type="button" onclick="nuevoCliente()">+ Nuevo cliente</button>
+  </div>
+</div>
+
+<div class="card" id="clientesGuardadosCard">
+  <div class="row" style="justify-content:space-between;align-items:center">
+    <h2 style="margin:0">Clientes guardados</h2>
+    <span class="muted">Selecciona un cliente para editarlo</span>
+  </div>
+  <div id="listaClientes" class="list" style="margin-top:10px"></div>
+</div>
 </section>
 
-<section id="trabajo" class="screen">
+<section id="trabajo"section id="trabajo" class="screen">
 <div class="card"><h2>Trabajo / fotos</h2>
 <div><label>Fotos antes</label><input id="fotoAntes" type="file" accept="image/*" multiple onchange="fotos('antes',this)"><div id="antesPreview"></div></div><br>
 <div><label>Fotos después</label><input id="fotoDespues" type="file" accept="image/*" multiple onchange="fotos('despues',this)"><div id="despuesPreview"></div></div>
@@ -173,7 +187,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 </section>
 
 <section id="facturas" class="screen">
-<div class="card"><h2>Facturas</h2><label>Mi número de cuenta / IBAN</label><input id="cCuenta" placeholder="IBAN / número de cuenta"><div id="listaFacturas" class="list"></div></div>
+<div class="card"><h2>Facturas</h2><div style="margin-bottom:12px"><label>Mi número de cuenta / IBAN</label><input id="cCuenta" placeholder="IBAN / número de cuenta"></div><div id="listaFacturas" class="list"></div></div>
 </section>
 
 <section id="ajustes" class="screen">
@@ -203,17 +217,19 @@ function guardarCliente(){
     id,
     nombre:getVal('cNombre'),
     nif:getVal('cNif'),
-    direccion:getVal('cDireccion'),
-    email:getVal('cEmail'),
+    empresa:getVal('cEmpresa'),
     tel:getVal('cTel'),
-    cuenta:getVal('cCuenta')
+    email:getVal('cEmail'),
+    direccion:getVal('cDireccion'),
+    notas:getVal('cNotas'),
+    cuenta:getVal('cCuenta')||''
   };
   if(!c.nombre.trim())return alert('Introduce el nombre del cliente.');
   const idx=db.clientes.findIndex(x=>String(x.id)===String(id));
-  if(idx>=0) db.clientes[idx]=c; else db.clientes.push(c);
+  if(idx>=0)db.clientes[idx]={...db.clientes[idx],...c}; else db.clientes.push(c);
   save();
   setVal('cId',c.id);
-  if(typeof renderClientesGuardados==='function')renderClientesGuardados();
+  renderClientesGuardados();
   alert('Cliente guardado correctamente.');
 }
 function editarCliente(id){
@@ -222,16 +238,18 @@ function editarCliente(id){
   setVal('cId',c.id||'');
   setVal('cNombre',c.nombre||'');
   setVal('cNif',c.nif||'');
-  setVal('cDireccion',c.direccion||'');
-  setVal('cEmail',c.email||'');
+  setVal('cEmpresa',c.empresa||'');
   setVal('cTel',c.tel||'');
+  setVal('cEmail',c.email||'');
+  setVal('cDireccion',c.direccion||'');
+  setVal('cNotas',c.notas||'');
   setVal('cCuenta',c.cuenta||'');
   const btn=document.getElementById('btnGuardarCliente');
   if(btn)btn.textContent='Guardar cambios';
-  window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('clientesGuardadosCard')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function nuevoCliente(){
-  ['cId','cNombre','cNif','cDireccion','cEmail','cTel','cCuenta'].forEach(id=>setVal(id,''));
+  ['cId','cNombre','cNif','cEmpresa','cTel','cEmail','cDireccion','cNotas','cCuenta'].forEach(id=>setVal(id,''));
   const btn=document.getElementById('btnGuardarCliente');
   if(btn)btn.textContent='Guardar cliente';
   window.scrollTo({top:0,behavior:'smooth'});
