@@ -83,7 +83,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 </div>
 </div>
 </div>
-<div class="muted" style="text-align:center;margin-top:6px">Pulsa directamente sobre la pieza del vehículo para abrir su zona · 0 Capó · 10 Techo · 9 Maletero · 1–4 derecha · 5–8 izquierda</div>
+<div class="muted" style="text-align:center;margin-top:6px">Pulsa directamente sobre una pieza para abrir su zona · la zona no se suma hasta que introduzcas y guardes datos · 0 Capó · 10 Techo · 9 Maletero · 1–4 derecha · 5–8 izquierda</div>
 </div>
 
 <div class="card" style="margin-top:12px;background:#fff8e8">
@@ -222,12 +222,12 @@ const zoneDefs=[
 {id:9,name:"Maletero",side:"centro"},
 {id:10,name:"Techo",side:"centro"}
 ];
-let zoneData=JSON.parse(localStorage.getItem(KEY+'_zones')||'{}');
+const ZONES_KEY=KEY+'_zones_v24'; let zoneData=JSON.parse(localStorage.getItem(ZONES_KEY)||'{}');
 let zonaActiva=null;
 let zonaTapizado=false;
 const precioTabla={"1":{"1-3":50,"3-5":80,"5-10":130,"10-20":200,"20-30":300},"2":{"1-3":90,"3-5":150,"5-10":250,"10-20":390,"20-30":560},"3":{"1-3":120,"3-5":210,"5-10":360,"10-20":585,"20-30":null},"5":{"1-3":140,"3-5":260,"5-10":460,"10-20":null,"20-30":null},"6":{"1-3":150,"3-5":300,"5-10":575,"10-20":null,"20-30":null}};
 const pdrDiametros=["1-3","3-5","5-10","10-20","20-30"];
-function saveZones(){localStorage.setItem(KEY+'_zones',JSON.stringify(zoneData))}
+function saveZones(){localStorage.setItem(ZONES_KEY,JSON.stringify(zoneData))}
 function normalizarLineasZona(d){
   const limpiar = arr => arr.map(x=>({
     impactos:+x.impactos||1,
@@ -430,19 +430,24 @@ function seleccionarZona(id){
 
   const titulo=document.getElementById('zonaEditorTitulo');
   const editor=document.getElementById('zonaEditor');
-  if(titulo){
-    const z=zoneDefs.find(x=>x.id===id);
-    titulo.textContent='Zona '+id+' · '+(z?z.name:'');
-  }
+  const z=zoneDefs.find(x=>x.id===id);
+  if(titulo) titulo.textContent='Zona '+id+' · '+(z?z.name:'');
   if(editor) editor.style.display='block';
+
   renderLineasZona(lineas);
   actualizarZonaTapizado();
   actualizarZonaPrecio();
   marcarPreciosPDRSeleccionados();
 
+  document.querySelectorAll('.zone-hit').forEach(b=>{
+    b.classList.toggle('selected',Number(b.dataset.zone)===id);
+  });
   document.querySelectorAll('.zone-hotspot').forEach(b=>{
     b.classList.toggle('selected',Number(b.dataset.zone)===id);
   });
+
+  // Seleccionar una pieza no la añade al total hasta que el usuario
+  // introduzca datos o pulse un precio/guarde la zona.
   if(editor) editor.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function guardarZona(){
