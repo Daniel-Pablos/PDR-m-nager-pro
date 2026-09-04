@@ -173,14 +173,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 </section>
 
 <section id="facturas" class="screen">
-<div class="card"><h2>Facturas</h2><div style="margin-top:10px">
-<label>Email del cliente</label>
-<div class="row" style="align-items:center;gap:8px">
-<input id="fEmail" type="email" placeholder="correo@cliente.com" style="flex:1">
-<button type="button" class="secondary" onclick="enviarFacturaEmail()">✉ Enviar por email</button>
-</div>
-<div id="emailFacturaEstado" class="muted" style="margin-top:6px">El email se cargará desde el cliente seleccionado.</div>
-</div><label>Mi número de cuenta / IBAN</label><input id="cCuenta" placeholder="IBAN / número de cuenta"><div id="listaFacturas" class="list"></div></div>
+<div class="card"><h2>Facturas</h2><label>Mi número de cuenta / IBAN</label><input id="cCuenta" placeholder="IBAN / número de cuenta"><div id="listaFacturas" class="list"></div></div>
 </section>
 
 <section id="ajustes" class="screen">
@@ -206,50 +199,13 @@ function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remo
 function euro(n){return Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'})}
 function guardarCliente(){let n=cNombre.value.trim();if(!n)return alert('Escribe el nombre del cliente.');db.clientes.push({id:Date.now(),nombre:n,nif:cNif.value,empresa:cEmpresa.value,tel:cTel.value,email:cEmail.value,direccion:cDireccion.value,notas:cNotas.value});cNombre.value=cNif.value=cEmpresa.value=cTel.value=cEmail.value=cDireccion.value=cNotas.value='';save();alert('Cliente guardado.')}
 
-function getClienteSeleccionadoFactura(){
-  const sel=document.getElementById('fCliente') || document.getElementById('clienteFactura');
-  if(!sel) return null;
-  const id=sel.value;
-  if(!id) return null;
-  if(typeof clientes!=='undefined' && Array.isArray(clientes)){
-    return clientes.find(c=>String(c.id)===String(id)) ||
-           clientes.find(c=>String(c.nombre)===String(id)) || null;
-  }
-  return null;
-}
-function actualizarEmailFacturaDesdeCliente(){
-  const input=document.getElementById('fEmail');
-  if(!input) return;
-  const c=getClienteSeleccionadoFactura();
-  input.value=(c&&c.email)?c.email:'';
-  const estado=document.getElementById('emailFacturaEstado');
-  if(estado) estado.textContent=(c&&c.email)
-    ? 'Email cargado desde la ficha del cliente.'
-    : 'El cliente seleccionado no tiene email guardado.';
-}
-function enviarFacturaEmail(){
-  const input=document.getElementById('fEmail');
-  const email=(input?.value||'').trim();
-  if(!email){
-    alert('Este cliente no tiene un email guardado. Añádelo en Clientes antes de enviar la factura.');
-    return;
-  }
-  const c=getClienteSeleccionadoFactura();
-  const numero=document.getElementById('fNumero')?.value || document.getElementById('numeroFactura')?.value || '';
-  const asunto=encodeURIComponent('Factura PDR Manager Pro'+(numero?' '+numero:''));
-  const cuerpo=encodeURIComponent(
-    'Hola '+(c?.nombre||'')+',\n\nTe envío la factura correspondiente.\n\nUn saludo.'
-  );
-  window.location.href='mailto:'+encodeURIComponent(email)+'?subject='+asunto+'&body='+cuerpo;
-}
-
 function render(){
 sClientes.textContent=db.clientes.length;sFacturas.textContent=db.facturas.length;
 sPendiente.textContent=euro(db.facturas.filter(f=>f.estado==='Pendiente').reduce((a,f)=>a+f.total,0));
 sCobrado.textContent=euro(db.facturas.filter(f=>f.estado==='Pagada').reduce((a,f)=>a+f.total,0));
 calcCliente.innerHTML='<option value="">Sin cliente</option>'+db.clientes.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
 listaClientes.innerHTML=db.clientes.length?db.clientes.map(c=>`<div class="item"><strong>${esc(c.nombre)}</strong><span>${esc(c.empresa||'')} ${esc(c.nif||'')}${c.direccion?'<br>'+esc(c.direccion):''}<br>${esc(c.tel||'Sin teléfono')}${c.email?' · '+esc(c.email):''}</span><div class="row" style="margin-top:7px"><button class="secondary" onclick="usarCliente(${c.id})">Usar en cálculo</button><button class="danger" onclick="delCliente(${c.id})">Eliminar</button></div></div>`).join(''):'<div class="muted">Aún no hay clientes.</div>';
-listaFacturas.innerHTML=db.facturas.length?db.facturas.slice().reverse().map(f=>`<div class="item"><strong>${f.numero} · ${esc(f.cliente||'Sin cliente')}</strong><span>${esc(f.matricula||'')} · ${euro(f.total)}</span><div style="margin:6px 0"><span class="badge ${f.estado==='Pagada'?'paid':'pending'}">${f.estado}</span></div><div class="row"><button class="secondary" onclick="verFactura(${f.id})">Ver</button><button class="secondary" onclick="togglePago(${f.id})">${f.estado==='Pagada'?'Marcar pendiente':'Marcar pagada'}</button><button class="secondary" onclick="whatsapp(${f.id})">WhatsApp</button><button class="secondary" onclick="emailFactura(${f.id})">Email</button><button class="secondary" onclick="imprimir(${f.id})">PDF / imprimir</button></div></div>`).join(''):'<div class="muted">No hay facturas.</div>';
+listaFacturas.innerHTML=db.facturas.length?db.facturas.slice().reverse().map(f=>`<div class="item"><strong>${f.numero} · ${esc(f.cliente||'Sin cliente')}</strong><span>${esc(f.matricula||'')} · ${euro(f.total)}</span><div style="margin:6px 0"><span class="badge ${f.estado==='Pagada'?'paid':'pending'}">${f.estado}</span></div><div class="row"><button class="secondary" onclick="verFactura(${f.id})">Ver</button><button class="secondary" onclick="togglePago(${f.id})">${f.estado==='Pagada'?'Marcar pendiente':'Marcar pagada'}</button><button class="secondary" onclick="whatsapp(${f.id})">WhatsApp</button><button class="secondary" onclick="emailFactura(${f.id})">✉ Email</button><button class="secondary" onclick="imprimir(${f.id})">PDF / imprimir</button></div></div>`).join(''):'<div class="muted">No hay facturas.</div>';
 setMin.value=db.settings.min;setDesplazamiento.value=db.settings.desplazamiento||60;setIban.value=db.settings.iban||'';desplazamiento.value=db.settings.desplazamiento||60;
 }
 function usarCliente(id){calcCliente.value=id;go('calculador')}
@@ -557,22 +513,68 @@ function calcular(){
  detalle.textContent=zones.length?partes.join(' · '):'Selecciona al menos una zona.';
  return db.lastCalc
 }
-function crearFactura(){let total=calcular();if(!total)return alert('Calcula primero un precio.');let c=db.clientes.find(x=>x.id==calcCliente.value);let f={id:Date.now(),numero:'PDR-'+String(db.facturas.length+1).padStart(4,'0'),fecha:new Date().toLocaleDateString('es-ES'),cliente:c?.nombre||'',empresa:c?.empresa||'',nif:c?.nif||'',email:c?.email||'',direccion:c?.direccion||'',tel:c?.tel||'',matricula:calcMatricula.value,zona:Object.keys(zoneData).map(id=>zoneDefs.find(z=>z.id==id)?.name||('Zona '+id)).join(', '),tamano:'',total,estado:'Pendiente'};db.facturas.push(f);save();alert('Factura creada: '+f.numero);go('facturas')}
+function crearFactura(){
+  let total=calcular();
+  if(!total)return alert('Calcula primero un precio.');
+  let c=db.clientes.find(x=>String(x.id)===String(calcCliente.value));
+  let f={
+    id:Date.now(),
+    numero:'PDR-'+String(db.facturas.length+1).padStart(4,'0'),
+    fecha:new Date().toLocaleDateString('es-ES'),
+    clienteId:c?.id||null,
+    cliente:c?.nombre||'',
+    empresa:c?.empresa||'',
+    nif:c?.nif||'',
+    email:c?.email||'',
+    direccion:c?.direccion||'',
+    tel:c?.tel||'',
+    matricula:calcMatricula.value,
+    zona:Object.keys(zoneData).map(id=>zoneDefs.find(z=>z.id==id)?.name||('Zona '+id)).join(', '),
+    tamano:'',
+    total,
+    estado:'Pendiente'
+  };
+  db.facturas.push(f);save();alert('Factura creada: '+f.numero);go('facturas')
+}
 function togglePago(id){let f=db.facturas.find(x=>x.id===id);f.estado=f.estado==='Pagada'?'Pendiente':'Pagada';save()}
 function verFactura(id){let f=db.facturas.find(x=>x.id===id);alert(`${f.numero}\\nCliente: ${f.cliente||'—'}\\nMatrícula: ${f.matricula||'—'}\\nTrabajo: ${f.zona}\\nTotal: ${euro(f.total)}\\nEstado: ${f.estado}`)}
-function emailFactura(id){let f=db.facturas.find(x=>x.id===id);if(!f)return;let subject=`Factura ${f.numero} - PDR Manager Pro`;let body=`Hola ${f.cliente||''},%0D%0A%0D%0ATe envío la factura ${f.numero} de la reparación PDR.%0D%0AImporte: ${euro(f.total)}%0D%0AEstado: ${f.estado}%0D%0A%0D%0AIBAN: ${db.settings.iban||''}%0D%0A%0D%0AUn saludo.`;window.location.href=`mailto:${encodeURIComponent(f.email||'')}?subject=${encodeURIComponent(subject)}&body=${body}`}
-function whatsapp(id){let f=db.facturas.find(x=>x.id===id);let msg=`Hola ${f.cliente||''}, te envío la factura ${f.numero} de tu reparación PDR. Total: ${euro(f.total)}. Estado: ${f.estado}.`;let phone=(f.tel||'').replace(/\D/g,'');let url=phone?`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`;window.open(url,'_blank')}
-function imprimir(id){let f=db.facturas.find(x=>x.id===id);let w=window.open('','_blank');w.document.write(`<html><head><title>${f.numero}</title><style>body{font-family:Arial;padding:30px}h1{font-size:24px}table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid #ddd}.total{font-size:24px;font-weight:bold}</style></head><body><h1>PDR Manager Pro</h1><h2>Factura ${f.numero}</h2><p>Fecha: ${f.fecha}</p><p>Cliente: ${esc(f.cliente)||'—'}<br>Teléfono: ${esc(f.tel)||'—'}<br>Matrícula: ${esc(f.matricula)||'—'}</p><table><tr><td>Reparación PDR · ${esc(f.zona)}</td><td>${euro(f.total)}</td></tr></table><p class="total">TOTAL: ${euro(f.total)}</p><p>Estado: ${f.estado}</p>${'<scr'+'ipt>'}window.print()${'</scr'+'ipt>'}</body></html>`);w.document.close()}
-function fotos(tipo,input){let arr=db.photos[tipo];[...input.files].forEach(file=>{let r=new FileReader();r.onload=e=>{arr.push(e.target.result);mostrarFotos(tipo);save()};r.readAsDataURL(file)});input.value=''}
-function mostrarFotos(tipo){let el=document.getElementById(tipo==='antes'?'antesPreview':'despuesPreview');el.innerHTML=db.photos[tipo].map(x=>`<img class="photo" src="${x}">`).join('')}
-function limpiarFirma(){let c=firma,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)}
-function initFirma(){let c=firma,ctx=c.getContext('2d');function pos(e){let r=c.getBoundingClientRect();return {x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}let down=false;c.width=Math.max(300,c.clientWidth*2);c.height=Math.max(150,c.clientHeight*2);ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';c.style.touchAction='none';c.addEventListener('pointerdown',e=>{e.preventDefault();down=true;c.setPointerCapture(e.pointerId);let p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});c.addEventListener('pointermove',e=>{if(!down)return;e.preventDefault();let p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke()});c.addEventListener('pointerup',e=>{down=false});c.addEventListener('pointercancel',e=>{down=false})}
-function guardarAjustes(){db.settings.min=+setMin.value||0;db.settings.desplazamiento=+setDesplazamiento.value||0;db.settings.iban=setIban.value.trim();save();alert('Parámetros guardados.')}
-function borrarTodo(){if(confirm('¿Borrar todos los datos de prueba?')){localStorage.removeItem(KEY);location.reload()}}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function emailFactura(id){
+  const f=db.facturas.find(x=>x.id===id);
+  if(!f)return;
 
-const granizoH={
-1:[30,35,40,50,55,60,65],2:[35,40,55,60,70,80,90],3:[40,50,60,70,85,95,115],4:[40,55,70,85,100,115,140],5:[50,60,80,95,115,130,160],6:[55,65,90,110,130,150,185],7:[60,70,95,120,145,170,210],8:[60,80,110,130,160,185,235],9:[65,85,115,145,175,205,260],10:[70,90,125,155,190,220,280],13:[80,100,140,175,215,260,330],16:[85,115,150,190,240,290,385],19:[90,120,160,210,265,325,430],22:[95,130,175,220,290,355,475],25:[100,140,180,240,305,385,515],28:[110,145,190,250,325,415,550],31:[115,150,200,265,350,445,590],34:[115,155,210,275,365,470,625],37:[120,160,215,290,385,500,665],40:[125,170,230,300,410,530,700],45:[130,180,240,325,440,575,770],50:[140,190,260,340,475,625,830],55:[150,200,270,365,505,670,895],60:[155,210,290,385,540,720,955],65:[160,220,300,410,570,770,1020],70:[170,235,320,425,605,815,1080],75:[180,240,330,450,635,865,1145],80:[185,250,350,470,670,910,1205],85:[190,265,360,490,700,960,1270],90:[200,275,380,510,740,1010,1330],95:[210,280,390,535,770,1055,null],100:[215,295,410,550,805,1105,null],110:[230,320,440,595,870,1200,null],120:[245,335,470,635,935,1295,null],130:[260,360,500,680,1000,null,null],140:[275,380,530,720,1070,null,null],150:[290,400,560,760,1135,null,null],160:[305,420,590,805,1200,null,null],170:[320,445,620,845,1265,null,null],180:[335,460,650,890,1325,null,null],190:[350,485,680,930,1390,null,null],200:[365,505,710,970,1455,null,null],210:[380,530,740,1015,1520,null,null],220:[395,545,770,1055,null,null],230:[410,570,800,1100,null,null],240:[425,590,830,1140,null,null],250:[440,610,860,1180,null,null],260:[455,630,890,1225,null,null],270:[475,650,920,1270,null,null],280:[485,670,950,1315,null,null],300:[515,715,1010,1405,null,null],325:[560,770,1080,1515,null,null],350:[595,815,1160,null,null,null],375:[630,870,1230,null,null,null],400:[665,925,1300,null,null,null]
+  // Prefer the customer record saved in Clientes; fall back to the email
+  // copied into the invoice for older invoices.
+  const c=f.clienteId!=null
+    ? db.clientes.find(x=>String(x.id)===String(f.clienteId))
+    : db.clientes.find(x=>x.nombre===f.cliente);
+
+  const email=(c?.email||f.email||'').trim();
+  if(!email){
+    alert('Este cliente no tiene un email guardado. Abre Clientes, añade el email y guarda el cliente antes de enviar.');
+    return;
+  }
+
+  // Save the current customer email back onto the invoice so the invoice
+  // remains usable even if the client data changes later.
+  f.email=email;
+  if(c){
+    f.clienteId=c.id;
+    f.cliente=c.nombre||f.cliente;
+    f.tel=c.tel||f.tel;
+  }
+
+  const subject=`Factura ${f.numero} - PDR Manager Pro`;
+  const body=
+    `Hola ${f.cliente||''},\n\n`+
+    `Te envío la factura ${f.numero} de la reparación PDR.\n`+
+    `Importe: ${euro(f.total)}\n`+
+    `Estado: ${f.estado}\n\n`+
+    `IBAN: ${db.settings.iban||''}\n\n`+
+    `Un saludo.`;
+
+  save();
+  // The recipient is filled automatically; the user does not type the address.
+  window.location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 };
 const granizoV={
 1:[30,35,40,50,55,60,65],2:[35,50,55,70,85,85,95],3:[40,55,65,85,100,110,125],4:[50,65,80,100,125,130,155],5:[55,70,90,115,145,155,185],6:[60,80,100,125,160,175,210],7:[65,85,110,140,175,190,230],8:[65,90,120,150,190,210,250],9:[70,95,125,160,205,230,270],10:[80,100,140,175,220,245,295],11:[80,110,145,185,235,265,310],12:[85,115,155,200,250,300,355],13:[85,120,160,210,265,320,355],14:[90,125,175,220,280,330,380],15:[90,130,180,235,295,335,395],16:[95,140,190,245,310,355,420],17:[95,145,200,260,325,370,440],18:[100,150,210,270,340,390,460],19:[100,155,215,280,355,410,480],20:[110,160,230,295,370,425,505],21:[110,170,235,305,385,445,null],22:[115,175,240,310,395,455,null],23:[120,175,245,325,410,475,null],24:[120,180,250,330,420,485,null],25:[120,185,260,340,430,505,null],26:[125,190,265,350,445,null,null],27:[125,190,270,360,455,null,null],28:[130,200,275,365,470,null,null],29:[130,205,280,380,480,null,null],30:[140,210,290,385,490,null,null],31:[140,210,295,395,505,null,null],32:[145,215,300,400,null,null,null],33:[145,220,305,415,null,null,null],34:[150,230,310,420,null,null,null],35:[150,230,320,430,null,null,null],36:[155,235,325,440,null,null,null],37:[155,240,330,450,null,null,null],38:[160,245,335,455,null,null,null],39:[160,245,340,470,null,null,null],40:[170,250,350,475,null,null,null],41:[170,260,355,485,null,null,null],42:[175,265,360,490,null,null,null],43:[175,265,365,505,null,null,null],44:[180,270,370,null,null,null,null],45:[180,275,380,null,null,null,null],46:[185,280,385,null,null,null,null],47:[185,280,390,null,null,null,null],48:[190,290,395,null,null,null,null],49:[190,295,400,null,null,null],50:[200,300,410,null,null,null,null]
@@ -673,6 +675,6 @@ function renderTablaGranizo(){
 }
 function tipoKey(titulo){return titulo.includes('horizontal')?'Pieza horizontal':'Pieza vertical'}
 
-render(); actualizarEmailFacturaDesdeCliente();drawZones();renderTablaPDR();actualizarTapizado();actualizarSuplementosPDR();actualizarSuplementosGranizo();actualizarGranizo();renderGranizoSeleccion();mostrarFotos('antes');mostrarFotos('despues');setTimeout(initFirma,100);
+render(); drawZones();renderTablaPDR();actualizarTapizado();actualizarSuplementosPDR();actualizarSuplementosGranizo();actualizarGranizo();renderGranizoSeleccion();mostrarFotos('antes');mostrarFotos('despues');setTimeout(initFirma,100);
 </script>
 </body></html>
