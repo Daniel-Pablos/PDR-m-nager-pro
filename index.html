@@ -178,7 +178,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 </div>
 </section>
 
-<section id="trabajo"section id="trabajo" class="screen">
+<section id="trabajo" class="screen">
 <div class="card"><h2>Trabajo / fotos</h2>
 <div><label>Fotos antes</label><input id="fotoAntes" type="file" accept="image/*" multiple onchange="fotos('antes',this)"><div id="antesPreview"></div></div><br>
 <div><label>Fotos después</label><input id="fotoDespues" type="file" accept="image/*" multiple onchange="fotos('despues',this)"><div id="despuesPreview"></div></div>
@@ -235,18 +235,11 @@ function guardarCliente(){
 function editarCliente(id){
   const c=(db.clientes||[]).find(x=>String(x.id)===String(id));
   if(!c)return;
-  setVal('cId',c.id||'');
-  setVal('cNombre',c.nombre||'');
-  setVal('cNif',c.nif||'');
-  setVal('cEmpresa',c.empresa||'');
-  setVal('cTel',c.tel||'');
-  setVal('cEmail',c.email||'');
-  setVal('cDireccion',c.direccion||'');
-  setVal('cNotas',c.notas||'');
-  setVal('cCuenta',c.cuenta||'');
+  ['cId','cNombre','cNif','cEmpresa','cTel','cEmail','cDireccion','cNotas','cCuenta']
+    .forEach(k=>setVal(k,c[k]||''));
   const btn=document.getElementById('btnGuardarCliente');
   if(btn)btn.textContent='Guardar cambios';
-  document.getElementById('clientesGuardadosCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('cNombre')?.focus();
 }
 function nuevoCliente(){
   ['cId','cNombre','cNif','cEmpresa','cTel','cEmail','cDireccion','cNotas','cCuenta'].forEach(id=>setVal(id,''));
@@ -265,44 +258,69 @@ function eliminarCliente(id){
 }
 
 function render(){
-sClientes.textContent=db.clientes.length;sFacturas.textContent=db.facturas.length;
-sPendiente.textContent=euro(db.facturas.filter(f=>f.estado==='Pendiente').reduce((a,f)=>a+f.total,0));
-sCobrado.textContent=euro(db.facturas.filter(f=>f.estado==='Pagada').reduce((a,f)=>a+f.total,0));
-calcCliente.innerHTML='<option value="">Sin cliente</option>'+db.clientes.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
-listaClientes.innerHTML=db.clientes.length?db.clientes.map(c=>`<div class="item"><strong>${esc(c.nombre)}</strong><span>${esc(c.empresa||'')} ${esc(c.nif||'')}${c.direccion?'<br>'+esc(c.direccion):''}<br>${esc(c.tel||'Sin teléfono')}${c.email?' · '+esc(c.email):''}</span><div class="row" style="margin-top:7px"><button class="secondary" onclick="usarCliente(${c.id})">Usar en cálculo</button><button class="danger" onclick="delCliente(${c.id})">Eliminar</button></div></div>`).join(''):'<div class="muted">Aún no hay clientes.</div>';
-listaFacturas.innerHTML=db.facturas.length?db.facturas.slice().reverse().map(f=>`<div class="item"><strong>${f.numero} · ${esc(f.cliente||'Sin cliente')}</strong><span>${esc(f.matricula||'')} · ${euro(f.total)}</span><div style="margin:6px 0"><span class="badge ${f.estado==='Pagada'?'paid':'pending'}">${f.estado}</span></div><div class="row"><button class="secondary" onclick="verFactura(${f.id})">Ver</button><button class="secondary" onclick="togglePago(${f.id})">${f.estado==='Pagada'?'Marcar pendiente':'Marcar pagada'}</button><button class="secondary" onclick="whatsapp(${f.id})">WhatsApp</button><button class="secondary" onclick="emailFactura(${f.id})">✉ Email</button><button class="secondary" onclick="imprimir(${f.id})">PDF / imprimir</button></div></div>`).join(''):'<div class="muted">No hay facturas.</div>';
-setMin.value=db.settings.min;setDesplazamiento.value=db.settings.desplazamiento||60;setIban.value=db.settings.iban||'';desplazamiento.value=db.settings.desplazamiento||60;
+  const sClientes=document.getElementById('sClientes');
+  const sFacturas=document.getElementById('sFacturas');
+  const sPendiente=document.getElementById('sPendiente');
+  const sCobrado=document.getElementById('sCobrado');
+  const calcClienteEl=document.getElementById('calcCliente');
+  const listaClientesEl=document.getElementById('listaClientes');
+  const listaFacturasEl=document.getElementById('listaFacturas');
+
+  if(sClientes)sClientes.textContent=db.clientes.length;
+  if(sFacturas)sFacturas.textContent=db.facturas.length;
+  if(sPendiente)sPendiente.textContent=euro(db.facturas.filter(f=>f.estado==='Pendiente').reduce((a,f)=>a+Number(f.total||0),0));
+  if(sCobrado)sCobrado.textContent=euro(db.facturas.filter(f=>f.estado==='Pagada').reduce((a,f)=>a+Number(f.total||0),0));
+
+  if(calcClienteEl){
+    calcClienteEl.innerHTML='<option value="">Sin cliente</option>'+
+      db.clientes.map(c=>`<option value="${esc(String(c.id))}">${esc(c.nombre||'Sin nombre')}</option>`).join('');
+  }
+
+  if(listaClientesEl){
+    listaClientesEl.innerHTML=db.clientes.length
+      ? db.clientes.slice().reverse().map(c=>`
+        <div class="item">
+          <strong>${esc(c.nombre||'Sin nombre')}</strong>
+          <span>
+            ${c.empresa?esc(c.empresa)+'<br>':''}
+            ${c.nif?esc(c.nif)+'<br>':''}
+            ${c.direccion?esc(c.direccion)+'<br>':''}
+            ${c.tel?esc(c.tel):'Sin teléfono'}
+            ${c.email?' · '+esc(c.email):' · Sin email'}
+          </span>
+          <div class="row" style="margin-top:7px;gap:6px;flex-wrap:wrap">
+            <button type="button" class="secondary" onclick="usarCliente(${JSON.stringify(String(c.id))})">Usar en PDR</button>
+            <button type="button" class="secondary" onclick="editarCliente(${JSON.stringify(String(c.id))})">Editar</button>
+            <button type="button" class="danger" onclick="eliminarCliente(${JSON.stringify(String(c.id))})">Eliminar</button>
+          </div>
+        </div>`).join('')
+      : '<div class="muted">Aún no hay clientes guardados. Guarda un cliente arriba y aparecerá aquí.</div>';
+  }
+
+  if(listaFacturasEl){
+    listaFacturasEl.innerHTML=db.facturas.length
+      ? db.facturas.slice().reverse().map(f=>`
+        <div class="item">
+          <strong>${esc(f.numero)} · ${esc(f.cliente||'Sin cliente')}</strong>
+          <span>${esc(f.matricula||'')} · ${euro(f.total)}</span>
+          <div style="margin:6px 0"><span class="badge ${f.estado==='Pagada'?'paid':'pending'}">${esc(f.estado)}</span></div>
+          <div class="row">
+            <button type="button" class="secondary" onclick="verFactura(${f.id})">Ver</button>
+            <button type="button" class="secondary" onclick="togglePago(${f.id})">${f.estado==='Pagada'?'Marcar pendiente':'Marcar pagada'}</button>
+            <button type="button" class="secondary" onclick="whatsapp(${f.id})">WhatsApp</button>
+            <button type="button" class="secondary" onclick="emailFactura(${f.id})">✉ Email</button>
+            <button type="button" class="secondary" onclick="imprimir(${f.id})">PDF / imprimir</button>
+          </div>
+        </div>`).join('')
+      : '<div class="muted">No hay facturas.</div>';
 }
-function usarCliente(id){calcCliente.value=id;go('calculador')}
-function delCliente(id){if(confirm('¿Eliminar cliente?')){db.clientes=db.clientes.filter(c=>c.id!==id);save()}}
-const zoneDefs=[
-{id:0,name:"Capó",side:"centro"},
-{id:1,name:"Aleta delantera derecha",side:"D"},
-{id:2,name:"Puerta delantera derecha",side:"D"},
-{id:3,name:"Puerta trasera derecha",side:"D"},
-{id:4,name:"Aleta trasera derecha",side:"D"},
-{id:5,name:"Aleta delantera izquierda",side:"I"},
-{id:6,name:"Puerta delantera izquierda",side:"I"},
-{id:7,name:"Puerta trasera izquierda",side:"I"},
-{id:8,name:"Aleta trasera izquierda",side:"I"},
-{id:9,name:"Maletero",side:"centro"},
-{id:10,name:"Techo",side:"centro"}
-];
-const ZONES_KEY=KEY+'_zones_v24'; let zoneData=JSON.parse(localStorage.getItem(ZONES_KEY)||'{}');
-let zonaActiva=null;
-let zonaTapizado=false;
-const precioTabla={"1":{"1-3":50,"3-5":80,"5-10":130,"10-20":200,"20-30":300},"2":{"1-3":90,"3-5":150,"5-10":250,"10-20":390,"20-30":560},"3":{"1-3":120,"3-5":210,"5-10":360,"10-20":585,"20-30":null},"5":{"1-3":140,"3-5":260,"5-10":460,"10-20":null,"20-30":null},"6":{"1-3":150,"3-5":300,"5-10":575,"10-20":null,"20-30":null}};
-const pdrDiametros=["1-3","3-5","5-10","10-20","20-30"];
-function saveZones(){localStorage.setItem(ZONES_KEY,JSON.stringify(zoneData))}
-function normalizarLineasZona(d){
-  const limpiar = arr => arr.map(x=>({
-    impactos:+x.impactos||1,
-    diametro:String(x.diametro??"1-3"),
-    precioManual:x.precioManual!=null?+x.precioManual:null
-  })).filter(x=>!(x.impactos===1 && x.diametro==='0.5'));
-  if(Array.isArray(d?.lineas)) return limpiar(d.lineas);
-  if(d && d.impactos) return limpiar([d]);
-  return [];
+
+function usarCliente(id){
+  const c=(db.clientes||[]).find(x=>String(x.id)===String(id));
+  if(!c)return;
+  const sel=document.getElementById('calcCliente');
+  if(sel)sel.value=c.id;
+  go('calculador');
 }
 function opcionesImpactos(valor){
   return ['1','2','3','5','6'].map(v=>`<option value="${v}" ${String(valor)===v?'selected':''}>${v}</option>`).join('');
