@@ -172,7 +172,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 <div class="card" id="clientesGuardadosCard">
   <div class="row" style="justify-content:space-between;align-items:center">
     <h2 style="margin:0">Clientes guardados</h2>
-    <span class="muted">Selecciona un cliente para editarlo</span>
+    <div class="row" style="gap:6px;align-items:center"><button type="button" class="secondary" onclick="recuperarClientesAntiguos()">↻ Recuperar clientes anteriores</button><span class="muted">Selecciona un cliente para editarlo</span></div>
   </div>
   <div id="listaClientes" class="list" style="margin-top:10px"></div>
 </div>
@@ -229,7 +229,7 @@ function guardarCliente(){
   if(idx>=0)db.clientes[idx]={...db.clientes[idx],...c}; else db.clientes.push(c);
   save();
   setVal('cId',c.id);
-  renderClientesGuardados();
+  render();
   alert('Cliente guardado correctamente.');
 }
 function editarCliente(id){
@@ -253,8 +253,58 @@ function eliminarCliente(id){
   if(!confirm('¿Eliminar al cliente '+(c.nombre||'')+'?'))return;
   db.clientes=db.clientes.filter(x=>String(x.id)!==String(id));
   save();
-  renderClientesGuardados();
+  render();
   alert('Cliente eliminado.');
+}
+
+
+function normalizarClienteRecuperado(c,idx){
+  if(!c || typeof c!=='object')return null;
+  const nombre=String(c.nombre??c.name??c.cliente??'').trim();
+  if(!nombre)return null;
+  return {
+    id:String(c.id??('rec-'+Date.now()+'-'+idx)),
+    nombre,
+    nif:String(c.nif??c.nie??''),
+    empresa:String(c.empresa??c.razonSocial??''),
+    tel:String(c.tel??c.telefono??c.whatsapp??''),
+    email:String(c.email??c.mail??''),
+    direccion:String(c.direccion??c.address??''),
+    notas:String(c.notas??c.notes??''),
+    cuenta:String(c.cuenta??c.iban??'')
+  };
+}
+function recuperarClientesAntiguos(){
+  const encontrados=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    try{
+      const raw=localStorage.getItem(key);
+      if(!raw)continue;
+      const data=JSON.parse(raw);
+      const arrays=[];
+      if(Array.isArray(data))arrays.push(data);
+      if(data&&Array.isArray(data.clientes))arrays.push(data.clientes);
+      arrays.flat().forEach((c,idx)=>{
+        const n=normalizarClienteRecuperado(c,idx);
+        if(n)encontrados.push(n);
+      });
+    }catch(e){}
+  }
+  const actuales=Array.isArray(db.clientes)?db.clientes:[];
+  const existing=new Set(actuales.map(c=>(String(c.email||'').toLowerCase()+'|'+String(c.nombre||'').toLowerCase()+'|'+String(c.nif||'').toLowerCase())));
+  let nuevos=0;
+  encontrados.forEach(c=>{
+    const sig=String(c.email||'').toLowerCase()+'|'+String(c.nombre||'').toLowerCase()+'|'+String(c.nif||'').toLowerCase();
+    if(existing.has(sig))return;
+    c.id='rec-'+Date.now()+'-'+nuevos+'-'+Math.random().toString(36).slice(2,7);
+    actuales.push(c); existing.add(sig); nuevos++;
+  });
+  db.clientes=actuales;
+  save();
+  alert(nuevos
+    ? `Se han recuperado ${nuevos} cliente(s).`
+    : 'No se han encontrado clientes antiguos en el almacenamiento de este navegador.');
 }
 
 function render(){
@@ -266,54 +316,49 @@ function render(){
   const listaClientesEl=document.getElementById('listaClientes');
   const listaFacturasEl=document.getElementById('listaFacturas');
 
-  if(sClientes)sClientes.textContent=db.clientes.length;
-  if(sFacturas)sFacturas.textContent=db.facturas.length;
-  if(sPendiente)sPendiente.textContent=euro(db.facturas.filter(f=>f.estado==='Pendiente').reduce((a,f)=>a+Number(f.total||0),0));
-  if(sCobrado)sCobrado.textContent=euro(db.facturas.filter(f=>f.estado==='Pagada').reduce((a,f)=>a+Number(f.total||0),0));
+  if(sClientes)sClientes.textContent=(db.clientes||[]).length;
+  if(sFacturas)sFacturas.textContent=(db.facturas||[]).length;
+  if(sPendiente)sPendiente.textContent=euro((db.facturas||[]).filter(f=>f.estado==='Pendiente').reduce((a,f)=>a+Number(f.total||0),0));
+  if(sCobrado)sCobrado.textContent=euro((db.facturas||[]).filter(f=>f.estado==='Pagada').reduce((a,f)=>a+Number(f.total||0),0));
 
   if(calcClienteEl){
     calcClienteEl.innerHTML='<option value="">Sin cliente</option>'+
-      db.clientes.map(c=>`<option value="${esc(String(c.id))}">${esc(c.nombre||'Sin nombre')}</option>`).join('');
+      (db.clientes||[]).map(c=>`<option value="${esc(String(c.id))}">${esc(c.nombre||'Sin nombre')}</option>`).join('');
   }
 
   if(listaClientesEl){
-    listaClientesEl.innerHTML=db.clientes.length
-      ? db.clientes.slice().reverse().map(c=>`
-        <div class="item">
-          <strong>${esc(c.nombre||'Sin nombre')}</strong>
-          <span>
-            ${c.empresa?esc(c.empresa)+'<br>':''}
-            ${c.nif?esc(c.nif)+'<br>':''}
-            ${c.direccion?esc(c.direccion)+'<br>':''}
-            ${c.tel?esc(c.tel):'Sin teléfono'}
-            ${c.email?' · '+esc(c.email):' · Sin email'}
-          </span>
-          <div class="row" style="margin-top:7px;gap:6px;flex-wrap:wrap">
-            <button type="button" class="secondary" onclick="usarCliente(${JSON.stringify(String(c.id))})">Usar en PDR</button>
-            <button type="button" class="secondary" onclick="editarCliente(${JSON.stringify(String(c.id))})">Editar</button>
-            <button type="button" class="danger" onclick="eliminarCliente(${JSON.stringify(String(c.id))})">Eliminar</button>
-          </div>
-        </div>`).join('')
-      : '<div class="muted">Aún no hay clientes guardados. Guarda un cliente arriba y aparecerá aquí.</div>';
+    const lista=db.clientes||[];
+    listaClientesEl.innerHTML=lista.length ? lista.map(c=>`
+      <div class="item">
+        <strong>${esc(c.nombre||'Sin nombre')}</strong>
+        <span>${c.email?esc(c.email):'Sin email'}${c.tel?' · '+esc(c.tel):''}${c.nif?' · '+esc(c.nif):''}</span>
+        <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">
+          <button type="button" class="secondary" onclick="usarCliente(${JSON.stringify(String(c.id))})">Usar en PDR</button>
+          <button type="button" class="secondary" onclick="editarCliente(${JSON.stringify(String(c.id))})">Editar</button>
+          <button type="button" class="danger" onclick="eliminarCliente(${JSON.stringify(String(c.id))})">Eliminar</button>
+        </div>
+      </div>`).join('') :
+      '<div class="muted">No hay clientes visibles. Pulsa «Recuperar clientes anteriores» para buscar los clientes guardados por versiones anteriores en este navegador.</div>';
   }
 
   if(listaFacturasEl){
-    listaFacturasEl.innerHTML=db.facturas.length
-      ? db.facturas.slice().reverse().map(f=>`
-        <div class="item">
-          <strong>${esc(f.numero)} · ${esc(f.cliente||'Sin cliente')}</strong>
-          <span>${esc(f.matricula||'')} · ${euro(f.total)}</span>
-          <div style="margin:6px 0"><span class="badge ${f.estado==='Pagada'?'paid':'pending'}">${esc(f.estado)}</span></div>
-          <div class="row">
-            <button type="button" class="secondary" onclick="verFactura(${f.id})">Ver</button>
-            <button type="button" class="secondary" onclick="togglePago(${f.id})">${f.estado==='Pagada'?'Marcar pendiente':'Marcar pagada'}</button>
-            <button type="button" class="secondary" onclick="whatsapp(${f.id})">WhatsApp</button>
-            <button type="button" class="secondary" onclick="emailFactura(${f.id})">✉ Email</button>
-            <button type="button" class="secondary" onclick="imprimir(${f.id})">PDF / imprimir</button>
-          </div>
-        </div>`).join('')
-      : '<div class="muted">No hay facturas.</div>';
+    const lista=db.facturas||[];
+    listaFacturasEl.innerHTML=lista.length ? lista.slice().reverse().map(f=>`
+      <div class="item">
+        <strong>${esc(f.numero||'Factura')} · ${esc(f.cliente||'Sin cliente')}</strong>
+        <span>${esc(f.matricula||'')} · ${euro(f.total)}</span>
+        <div style="margin:6px 0"><span class="badge ${f.estado==='Pagada'?'paid':'pending'}">${esc(f.estado||'Pendiente')}</span></div>
+        <div class="row">
+          <button type="button" class="secondary" onclick="verFactura(${f.id})">Ver</button>
+          <button type="button" class="secondary" onclick="togglePago(${f.id})">${f.estado==='Pagada'?'Marcar pendiente':'Marcar pagada'}</button>
+          <button type="button" class="secondary" onclick="whatsapp(${f.id})">WhatsApp</button>
+          <button type="button" class="secondary" onclick="emailFactura(${f.id})">✉ Email</button>
+          <button type="button" class="secondary" onclick="imprimir(${f.id})">PDF / imprimir</button>
+        </div>
+      </div>`).join('') : '<div class="muted">No hay facturas.</div>';
+  }
 }
+
 
 function usarCliente(id){
   const c=(db.clientes||[]).find(x=>String(x.id)===String(id));
