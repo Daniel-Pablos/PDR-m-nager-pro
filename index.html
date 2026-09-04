@@ -538,43 +538,70 @@ function crearFactura(){
 }
 function togglePago(id){let f=db.facturas.find(x=>x.id===id);f.estado=f.estado==='Pagada'?'Pendiente':'Pagada';save()}
 function verFactura(id){let f=db.facturas.find(x=>x.id===id);alert(`${f.numero}\\nCliente: ${f.cliente||'—'}\\nMatrícula: ${f.matricula||'—'}\\nTrabajo: ${f.zona}\\nTotal: ${euro(f.total)}\\nEstado: ${f.estado}`)}
-function emailFactura(id){
+async function emailFactura(id){
   const f=db.facturas.find(x=>x.id===id);
   if(!f)return;
 
-  // Prefer the customer record saved in Clientes; fall back to the email
-  // copied into the invoice for older invoices.
   const c=f.clienteId!=null
     ? db.clientes.find(x=>String(x.id)===String(f.clienteId))
     : db.clientes.find(x=>x.nombre===f.cliente);
 
   const email=(c?.email||f.email||'').trim();
   if(!email){
-    alert('Este cliente no tiene un email guardado. Abre Clientes, añade el email y guarda el cliente antes de enviar.');
+    alert('Este cliente no tiene un email guardado. Añádelo en Clientes y guarda el cliente antes de enviar.');
     return;
   }
 
-  // Save the current customer email back onto the invoice so the invoice
-  // remains usable even if the client data changes later.
-  f.email=email;
-  if(c){
-    f.clienteId=c.id;
-    f.cliente=c.nombre||f.cliente;
-    f.tel=c.tel||f.tel;
-  }
+  const btn=[...document.querySelectorAll('button')].find(b=>b.getAttribute('onclick')===`emailFactura(${id})`);
+  if(btn){btn.disabled=true;btn.textContent='Enviando…';}
 
   const subject=`Factura ${f.numero} - PDR Manager Pro`;
-  const body=
-    `Hola ${f.cliente||''},\n\n`+
-    `Te envío la factura ${f.numero} de la reparación PDR.\n`+
-    `Importe: ${euro(f.total)}\n`+
-    `Estado: ${f.estado}\n\n`+
-    `IBAN: ${db.settings.iban||''}\n\n`+
-    `Un saludo.`;
+  const iban=db.settings.iban||'';
+  const htmlCorreo=`
+    <div style="font-family:Arial,sans-serif;line-height:1.5">
+      <h2>Factura ${f.numero}</h2>
+      <p>Hola ${esc(f.cliente||'')},</p>
+      <p>Te envío la factura correspondiente a la reparación PDR.</p>
+      <p><strong>Importe: ${euro(f.total)}</strong></p>
+      <p>Estado: ${esc(f.estado||'Pendiente')}</p>
+      ${iban?`<p>IBAN: ${esc(iban)}</p>`:''}
+      <p>Un saludo.</p>
+    </div>`;
 
-  save();
-  // The recipient is filled automatically; the user does not type the address.
-  window.location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  try{
+    const response=await fetch('https://aaejtgrzuzmjocxfquyw.supabase.co/functions/v1/send-invoice-email',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':'sb_publishable__HK7A-7wsf0LBYLM2ObccA_ETdzkE1_',
+        'Authorization':'Bearer sb_publishable__HK7A-7wsf0LBYLM2ObccA_ETdzkE1_'
+      },
+      body:JSON.stringify({
+        to:email,
+        subject,
+        html:htmlCorreo,
+        filename:`${f.numero}.pdf`
+      })
+    });
+
+    const text=await response.text();
+    let data={};
+    try{data=JSON.parse(text)}catch{}
+
+    if(!response.ok){
+      throw new Error(data.error||text||`HTTP ${response.status}`);
+    }
+
+    f.email=email;
+    f.clienteId=c?.id||f.clienteId||null;
+    save();
+    alert(`Factura enviada correctamente a ${email}.`);
+  }catch(err){
+    console.error(err);
+    alert(`No se pudo enviar la factura. ${err.message||err}`);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='✉ Email';}
+  }
 };
 const granizoV={
 1:[30,35,40,50,55,60,65],2:[35,50,55,70,85,85,95],3:[40,55,65,85,100,110,125],4:[50,65,80,100,125,130,155],5:[55,70,90,115,145,155,185],6:[60,80,100,125,160,175,210],7:[65,85,110,140,175,190,230],8:[65,90,120,150,190,210,250],9:[70,95,125,160,205,230,270],10:[80,100,140,175,220,245,295],11:[80,110,145,185,235,265,310],12:[85,115,155,200,250,300,355],13:[85,120,160,210,265,320,355],14:[90,125,175,220,280,330,380],15:[90,130,180,235,295,335,395],16:[95,140,190,245,310,355,420],17:[95,145,200,260,325,370,440],18:[100,150,210,270,340,390,460],19:[100,155,215,280,355,410,480],20:[110,160,230,295,370,425,505],21:[110,170,235,305,385,445,null],22:[115,175,240,310,395,455,null],23:[120,175,245,325,410,475,null],24:[120,180,250,330,420,485,null],25:[120,185,260,340,430,505,null],26:[125,190,265,350,445,null,null],27:[125,190,270,360,455,null,null],28:[130,200,275,365,470,null,null],29:[130,205,280,380,480,null,null],30:[140,210,290,385,490,null,null],31:[140,210,295,395,505,null,null],32:[145,215,300,400,null,null,null],33:[145,220,305,415,null,null,null],34:[150,230,310,420,null,null,null],35:[150,230,320,430,null,null,null],36:[155,235,325,440,null,null,null],37:[155,240,330,450,null,null,null],38:[160,245,335,455,null,null,null],39:[160,245,340,470,null,null,null],40:[170,250,350,475,null,null,null],41:[170,260,355,485,null,null,null],42:[175,265,360,490,null,null,null],43:[175,265,365,505,null,null,null],44:[180,270,370,null,null,null,null],45:[180,275,380,null,null,null,null],46:[185,280,385,null,null,null,null],47:[185,280,390,null,null,null,null],48:[190,290,395,null,null,null,null],49:[190,295,400,null,null,null],50:[200,300,410,null,null,null,null]
