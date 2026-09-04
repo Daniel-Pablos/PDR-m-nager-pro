@@ -173,7 +173,14 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 </section>
 
 <section id="facturas" class="screen">
-<div class="card"><h2>Facturas</h2><label>Mi número de cuenta / IBAN</label><input id="cCuenta" placeholder="IBAN / número de cuenta"><div id="listaFacturas" class="list"></div></div>
+<div class="card"><h2>Facturas</h2><div style="margin-top:10px">
+<label>Email del cliente</label>
+<div class="row" style="align-items:center;gap:8px">
+<input id="fEmail" type="email" placeholder="correo@cliente.com" style="flex:1">
+<button type="button" class="secondary" onclick="enviarFacturaEmail()">✉ Enviar por email</button>
+</div>
+<div id="emailFacturaEstado" class="muted" style="margin-top:6px">El email se cargará desde el cliente seleccionado.</div>
+</div><label>Mi número de cuenta / IBAN</label><input id="cCuenta" placeholder="IBAN / número de cuenta"><div id="listaFacturas" class="list"></div></div>
 </section>
 
 <section id="ajustes" class="screen">
@@ -198,6 +205,44 @@ const nav=document.getElementById('nav');tabs.forEach(([id,n])=>{let b=document.
 function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===id));render()}
 function euro(n){return Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'})}
 function guardarCliente(){let n=cNombre.value.trim();if(!n)return alert('Escribe el nombre del cliente.');db.clientes.push({id:Date.now(),nombre:n,nif:cNif.value,empresa:cEmpresa.value,tel:cTel.value,email:cEmail.value,direccion:cDireccion.value,notas:cNotas.value});cNombre.value=cNif.value=cEmpresa.value=cTel.value=cEmail.value=cDireccion.value=cNotas.value='';save();alert('Cliente guardado.')}
+
+function getClienteSeleccionadoFactura(){
+  const sel=document.getElementById('fCliente') || document.getElementById('clienteFactura');
+  if(!sel) return null;
+  const id=sel.value;
+  if(!id) return null;
+  if(typeof clientes!=='undefined' && Array.isArray(clientes)){
+    return clientes.find(c=>String(c.id)===String(id)) ||
+           clientes.find(c=>String(c.nombre)===String(id)) || null;
+  }
+  return null;
+}
+function actualizarEmailFacturaDesdeCliente(){
+  const input=document.getElementById('fEmail');
+  if(!input) return;
+  const c=getClienteSeleccionadoFactura();
+  input.value=(c&&c.email)?c.email:'';
+  const estado=document.getElementById('emailFacturaEstado');
+  if(estado) estado.textContent=(c&&c.email)
+    ? 'Email cargado desde la ficha del cliente.'
+    : 'El cliente seleccionado no tiene email guardado.';
+}
+function enviarFacturaEmail(){
+  const input=document.getElementById('fEmail');
+  const email=(input?.value||'').trim();
+  if(!email){
+    alert('Este cliente no tiene un email guardado. Añádelo en Clientes antes de enviar la factura.');
+    return;
+  }
+  const c=getClienteSeleccionadoFactura();
+  const numero=document.getElementById('fNumero')?.value || document.getElementById('numeroFactura')?.value || '';
+  const asunto=encodeURIComponent('Factura PDR Manager Pro'+(numero?' '+numero:''));
+  const cuerpo=encodeURIComponent(
+    'Hola '+(c?.nombre||'')+',\n\nTe envío la factura correspondiente.\n\nUn saludo.'
+  );
+  window.location.href='mailto:'+encodeURIComponent(email)+'?subject='+asunto+'&body='+cuerpo;
+}
+
 function render(){
 sClientes.textContent=db.clientes.length;sFacturas.textContent=db.facturas.length;
 sPendiente.textContent=euro(db.facturas.filter(f=>f.estado==='Pendiente').reduce((a,f)=>a+f.total,0));
@@ -628,6 +673,6 @@ function renderTablaGranizo(){
 }
 function tipoKey(titulo){return titulo.includes('horizontal')?'Pieza horizontal':'Pieza vertical'}
 
-render();drawZones();renderTablaPDR();actualizarTapizado();actualizarSuplementosPDR();actualizarSuplementosGranizo();actualizarGranizo();renderGranizoSeleccion();mostrarFotos('antes');mostrarFotos('despues');setTimeout(initFirma,100);
+render(); actualizarEmailFacturaDesdeCliente();drawZones();renderTablaPDR();actualizarTapizado();actualizarSuplementosPDR();actualizarSuplementosGranizo();actualizarGranizo();renderGranizoSeleccion();mostrarFotos('antes');mostrarFotos('despues');setTimeout(initFirma,100);
 </script>
 </body></html>
