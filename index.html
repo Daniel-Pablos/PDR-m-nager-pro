@@ -153,7 +153,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px so
 </section>
 <section id="clientes" class="screen">
 <div class="card"><h2>Nuevo cliente</h2><div class="grid">
-<div><label>Nombre</label><input id="cNombre"></div>
+<div><input id="cId" type="hidden"><label>Nombre</label><input id="cNombre"></div>
 <div><label>NIF / NIE</label><input id="cNif"></div>
 <div><label>Nombre de empresa</label><input id="cEmpresa"></div>
 <div><label>Teléfono / WhatsApp</label><input id="cTel"></div>
@@ -197,7 +197,54 @@ const tabs=[['inicio','Inicio'],['calculador','PDR'],['granizo','Granizo'],['cli
 const nav=document.getElementById('nav');tabs.forEach(([id,n])=>{let b=document.createElement('button');b.textContent=n;b.onclick=()=>go(id);b.dataset.id=id;nav.appendChild(b)});
 function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===id));render()}
 function euro(n){return Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'})}
-function guardarCliente(){let n=cNombre.value.trim();if(!n)return alert('Escribe el nombre del cliente.');db.clientes.push({id:Date.now(),nombre:n,nif:cNif.value,empresa:cEmpresa.value,tel:cTel.value,email:cEmail.value,direccion:cDireccion.value,notas:cNotas.value});cNombre.value=cNif.value=cEmpresa.value=cTel.value=cEmail.value=cDireccion.value=cNotas.value='';save();alert('Cliente guardado.')}
+function guardarCliente(){
+  const id=getVal('cId')||String(Date.now());
+  const c={
+    id,
+    nombre:getVal('cNombre'),
+    nif:getVal('cNif'),
+    direccion:getVal('cDireccion'),
+    email:getVal('cEmail'),
+    tel:getVal('cTel'),
+    cuenta:getVal('cCuenta')
+  };
+  if(!c.nombre.trim())return alert('Introduce el nombre del cliente.');
+  const idx=db.clientes.findIndex(x=>String(x.id)===String(id));
+  if(idx>=0) db.clientes[idx]=c; else db.clientes.push(c);
+  save();
+  setVal('cId',c.id);
+  if(typeof renderClientesGuardados==='function')renderClientesGuardados();
+  alert('Cliente guardado correctamente.');
+}
+function editarCliente(id){
+  const c=(db.clientes||[]).find(x=>String(x.id)===String(id));
+  if(!c)return;
+  setVal('cId',c.id||'');
+  setVal('cNombre',c.nombre||'');
+  setVal('cNif',c.nif||'');
+  setVal('cDireccion',c.direccion||'');
+  setVal('cEmail',c.email||'');
+  setVal('cTel',c.tel||'');
+  setVal('cCuenta',c.cuenta||'');
+  const btn=document.getElementById('btnGuardarCliente');
+  if(btn)btn.textContent='Guardar cambios';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function nuevoCliente(){
+  ['cId','cNombre','cNif','cDireccion','cEmail','cTel','cCuenta'].forEach(id=>setVal(id,''));
+  const btn=document.getElementById('btnGuardarCliente');
+  if(btn)btn.textContent='Guardar cliente';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function eliminarCliente(id){
+  const c=(db.clientes||[]).find(x=>String(x.id)===String(id));
+  if(!c)return;
+  if(!confirm('¿Eliminar al cliente '+(c.nombre||'')+'?'))return;
+  db.clientes=db.clientes.filter(x=>String(x.id)!==String(id));
+  save();
+  renderClientesGuardados();
+  alert('Cliente eliminado.');
+}
 
 function render(){
 sClientes.textContent=db.clientes.length;sFacturas.textContent=db.facturas.length;
